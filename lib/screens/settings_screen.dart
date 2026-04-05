@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _cityController = TextEditingController();
+  final _iluiController = TextEditingController();
   String _selectedGender = '';
   String _selectedNusach = 'ashkenaz';
   int _dailyGoal = 5;
@@ -37,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _nameController.text = progress.userName;
     _ageController.text = progress.age > 0 ? progress.age.toString() : '';
     _cityController.text = progress.city;
+    _iluiController.text = progress.iluiNeshama;
     _selectedGender = progress.gender;
     _selectedNusach = progress.nusach;
     _dailyGoal = progress.dailyGoalSections;
@@ -62,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _cityController.dispose();
+    _iluiController.dispose();
     super.dispose();
   }
 
@@ -75,6 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       city: _cityController.text.trim(),
       nusach: _selectedNusach,
       maritalStatus: _maritalStatus,
+      iluiNeshama: _iluiController.text.trim(),
       dailyGoalSections: _dailyGoal,
       notificationsEnabled: _notificationsEnabled,
       notificationTime: timeStr,
@@ -267,6 +271,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _cityController,
                 hint: 'לדוגמה: ירושלים',
                 icon: Icons.location_city,
+              ),
+              const SizedBox(height: 20),
+
+              // Ilui Neshama
+              _buildLabel('לעילוי נשמת'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                controller: _iluiController,
+                hint: 'שם הנפטר/ת (לא חובה)',
+                icon: Icons.favorite_border,
               ),
               const SizedBox(height: 20),
 

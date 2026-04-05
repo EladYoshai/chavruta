@@ -47,6 +47,12 @@ class _StudyScreenState extends State<StudyScreen> {
           await _loadMishna();
         case StudySectionType.emunah:
           await _loadEmunah();
+        case StudySectionType.rambam:
+          await _loadRambam();
+        case StudySectionType.shmiratHalashon:
+          await _loadShmiratHalashon();
+        case StudySectionType.pirkeiAvot:
+          await _loadPirkeiAvot();
         case StudySectionType.gemara:
           await _loadGemara();
       }
@@ -294,6 +300,87 @@ class _StudyScreenState extends State<StudyScreen> {
         segments: chapterText,
         isBold: false,
         labelColor: const Color(0xFF6A1B9A),
+      ),
+    ];
+  }
+
+  Future<void> _loadRambam() async {
+    final calendar = await _sefaria.getCalendarInfo();
+    final ref = calendar.rambamYomiRef.isNotEmpty
+        ? calendar.rambamYomiRef
+        : 'Mishneh_Torah,_Reading_the_Shema.1';
+
+    final data = await _sefaria.getText(ref);
+    _hebrewRef = data['heRef']?.toString() ?? 'רמב"ם יומי';
+    final text = _extractHebrewText(data);
+
+    _blocks = [
+      TextBlock(
+        label: '📚 רמב"ם יומי - $_hebrewRef',
+        segments: text,
+        isBold: false,
+        labelColor: const Color(0xFF1565C0),
+      ),
+    ];
+  }
+
+  Future<void> _loadShmiratHalashon() async {
+    // Cycle through Chofetz Chaim principles by day of year
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays + 1;
+    // 10 principles in Part One, 9 in Part Two
+    final totalPrinciples = 19;
+    final principleIndex = (dayOfYear % totalPrinciples) + 1;
+
+    String ref;
+    if (principleIndex <= 10) {
+      ref = 'Chofetz_Chaim,_Part_One,_The_Prohibition_Against_Lashon_Hara,_Principle_$principleIndex';
+    } else {
+      ref = 'Chofetz_Chaim,_Part_Two,_The_Prohibition_Against_Rechilut,_Principle_${principleIndex - 10}';
+    }
+
+    final data = await _sefaria.getText(ref);
+    _hebrewRef = data['heRef']?.toString() ?? 'שמירת הלשון';
+    final text = _extractHebrewText(data);
+
+    _blocks = [
+      TextBlock(
+        label: '🗣️ חפץ חיים - $_hebrewRef',
+        segments: text,
+        isBold: false,
+        labelColor: const Color(0xFF00695C),
+      ),
+    ];
+  }
+
+  Future<void> _loadPirkeiAvot() async {
+    // Between Pesach and Rosh Hashana, one chapter per Shabbat, cycling 1-6
+    final now = DateTime.now();
+    final jewishCal = JewishCalendar.fromDateTime(now);
+    final month = jewishCal.getJewishMonth();
+    final day = jewishCal.getJewishDayOfMonth();
+
+    // Calculate which chapter based on weeks since Pesach
+    // Pesach is 15 Nissan (month 1), Shavuot is 6 Sivan (month 3)
+    // After Shavuot, continue cycling until Rosh Hashana
+    int weeksSincePesach = 0;
+    if (month == 1 && day >= 15) {
+      weeksSincePesach = ((day - 15) / 7).floor();
+    } else if (month > 1 && month <= 6) {
+      weeksSincePesach = ((day + (month - 1) * 30 - 15) / 7).floor();
+    }
+    final chapter = (weeksSincePesach % 6) + 1;
+
+    final ref = 'Pirkei_Avot.$chapter';
+    final data = await _sefaria.getText(ref);
+    _hebrewRef = data['heRef']?.toString() ?? 'פרקי אבות';
+    final text = _extractHebrewText(data);
+
+    _blocks = [
+      TextBlock(
+        label: '📖 פרקי אבות - $_hebrewRef',
+        segments: text,
+        isBold: false,
+        labelColor: const Color(0xFF4E342E),
       ),
     ];
   }
@@ -555,6 +642,23 @@ class _StudyScreenState extends State<StudyScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // לעילוי נשמת dedication
+            Builder(builder: (ctx) {
+              final ilui = ctx.read<AppState>().progress.iluiNeshama;
+              if (ilui.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'הלימוד מוקדש לעילוי נשמת $ilui',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.rubik(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.darkGold,
+                  ),
+                ),
+              );
+            }),
             // Prev/Next daf navigation for Gemara
             if (widget.section.type == StudySectionType.gemara &&
                 _currentGemaraRef != null &&

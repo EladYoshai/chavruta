@@ -115,13 +115,24 @@ class _HomeScreenState extends State<HomeScreen> {
       final dayIndex = now.weekday % 7; // Sunday = 0
       final dayName = _hebrewDayNames[dayIndex];
 
-      // Omer counting
-      final month = jewishCalendar.getJewishMonth();
-      final day = jewishCalendar.getJewishDayOfMonth();
+      // Omer counting - after shkia (sunset) show next day's count
+      // Use Jerusalem default for sunset calculation
+      final geoLocation = GeoLocation.setLocation(
+        'Jerusalem', 31.7683, 35.2137, now);
+      final zmanimCal = ComplexZmanimCalendar.intGeoLocation(geoLocation);
+      final sunset = zmanimCal.getSunset();
+      final isAfterShkia = sunset != null && now.isAfter(sunset);
+
+      // If after shkia, use tomorrow's Hebrew date for omer
+      final omerDate = isAfterShkia
+          ? JewishCalendar.fromDateTime(now.add(const Duration(days: 1)))
+          : jewishCalendar;
+      final omerMonth = omerDate.getJewishMonth();
+      final omerDayOfMonth = omerDate.getJewishDayOfMonth();
       int omerDay = 0;
-      if (month == 1 && day >= 16) omerDay = day - 15;
-      if (month == 2) omerDay = day + 15;
-      if (month == 3 && day <= 5) omerDay = day + 44;
+      if (omerMonth == 1 && omerDayOfMonth >= 16) omerDay = omerDayOfMonth - 15;
+      if (omerMonth == 2) omerDay = omerDayOfMonth + 15;
+      if (omerMonth == 3 && omerDayOfMonth <= 5) omerDay = omerDayOfMonth + 44;
       final omer = (omerDay > 0 && omerDay <= 49) ? omerHebrew[omerDay] : '';
 
       if (mounted) {
@@ -421,6 +432,53 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+                // Beit Knesset finder
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: GestureDetector(
+                      onTap: () => _openBeitKnessetMap(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.deepBlue.withValues(alpha: 0.1),
+                              AppColors.warmBlue.withValues(alpha: 0.08),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.deepBlue.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Row(
+                            children: [
+                              const Text('🏛️', style: TextStyle(fontSize: 22)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'בתי כנסת בסביבה',
+                                  style: GoogleFonts.rubik(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.darkBrown,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.navigation,
+                                  color: AppColors.deepBlue, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 // Mikvah button (married women only)
                 if (progress.showMikvah)
                   SliverToBoxAdapter(
@@ -634,6 +692,14 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  Future<void> _openBeitKnessetMap() async {
+    final url = Uri.parse(
+        'https://www.google.com/maps/search/%D7%91%D7%99%D7%AA+%D7%9B%D7%A0%D7%A1%D7%AA/');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _openMikvahMap() async {

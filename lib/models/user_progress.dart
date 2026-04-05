@@ -33,6 +33,9 @@ class UserProgress {
   // Marital status (for women - mikvah feature)
   String maritalStatus; // '', 'single', 'married'
 
+  // Dedication
+  String iluiNeshama; // לעילוי נשמת text
+
   // Omer reminder
   bool omerReminderEnabled;
   String omerReminderTime; // 'HH:mm' format
@@ -71,6 +74,7 @@ class UserProgress {
     this.notificationTime = '08:00',
     List<int>? reminderDays,
     this.maritalStatus = '',
+    this.iluiNeshama = '',
     this.omerReminderEnabled = false,
     this.omerReminderTime = '20:00',
     this.meatDairyHours = 6.0,
@@ -91,6 +95,9 @@ class UserProgress {
               'mishna': false,
               'emunah': false,
               'gemara': false,
+              'rambam': false,
+              'shmirat_halashon': false,
+              'pirkei_avot': false,
             },
         reminderDays = reminderDays ?? [0, 1, 2, 3, 4], // Sun-Thu default
         purchasedAvatars = purchasedAvatars ?? [],
@@ -176,6 +183,7 @@ class UserProgress {
         'notificationTime': notificationTime,
         'reminderDays': reminderDays,
         'maritalStatus': maritalStatus,
+        'iluiNeshama': iluiNeshama,
         'omerReminderEnabled': omerReminderEnabled,
         'omerReminderTime': omerReminderTime,
         'meatDairyHours': meatDairyHours,
@@ -217,6 +225,7 @@ class UserProgress {
             ? List<int>.from(json['reminderDays'])
             : null,
         maritalStatus: json['maritalStatus'] ?? '',
+        iluiNeshama: json['iluiNeshama'] ?? '',
         omerReminderEnabled: json['omerReminderEnabled'] ?? false,
         omerReminderTime: json['omerReminderTime'] ?? '20:00',
         meatDairyHours: (json['meatDairyHours'] ?? 6).toDouble(),

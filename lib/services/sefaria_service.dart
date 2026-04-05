@@ -12,6 +12,7 @@ class CalendarInfo {
   final String halachaYomitRef;
   final String mishnaYomitRef;
   final String tanyaYomiRef;
+  final String rambamYomiRef;
   final List<String> aliyot;
 
   CalendarInfo({
@@ -23,6 +24,7 @@ class CalendarInfo {
     required this.halachaYomitRef,
     required this.mishnaYomitRef,
     required this.tanyaYomiRef,
+    required this.rambamYomiRef,
     required this.aliyot,
   });
 }
@@ -117,6 +119,7 @@ class SefariaService {
     String halachaYomitRef = '';
     String mishnaYomitRef = '';
     String tanyaYomiRef = '';
+    String rambamYomiRef = '';
     List<String> aliyot = [];
 
     for (final item in items) {
@@ -141,6 +144,8 @@ class SefariaService {
         mishnaYomitRef = (item['url'] ?? item['ref'] ?? '').toString().replaceAll(' ', '_');
       } else if (title == 'Tanya Yomi') {
         tanyaYomiRef = (item['url'] ?? item['ref'] ?? '').toString().replaceAll(' ', '_');
+      } else if (title == 'Daily Rambam') {
+        rambamYomiRef = (item['url'] ?? item['ref'] ?? '').toString().replaceAll(' ', '_');
       }
     }
 
@@ -153,6 +158,7 @@ class SefariaService {
       halachaYomitRef: halachaYomitRef,
       mishnaYomitRef: mishnaYomitRef,
       tanyaYomiRef: tanyaYomiRef,
+      rambamYomiRef: rambamYomiRef,
       aliyot: aliyot,
     );
     _cachedCalendarDate = today;

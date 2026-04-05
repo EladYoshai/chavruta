@@ -159,9 +159,9 @@ class TorahTextViewer extends StatelessWidget {
             child: Text(
               cleanText,
               style: GoogleFonts.rubik(
-                fontSize: block.isBold ? 20 : 18,
+                fontSize: block.isBold ? 22 : 20,
                 fontWeight: block.isBold ? FontWeight.w600 : FontWeight.normal,
-                height: 1.8,
+                height: 2.0,
                 color: AppColors.darkBrown,
               ),
             ),
@@ -175,7 +175,13 @@ class TorahTextViewer extends StatelessWidget {
   }
 
   static String stripHtml(String html) {
-    return html
+    // First decode HTML numeric entities (&#1234;) to preserve nikud/taamim
+    var text = html.replaceAllMapped(
+      RegExp(r'&#(\d+);'),
+      (match) => String.fromCharCode(int.parse(match.group(1)!)),
+    );
+    // Strip HTML tags but preserve content
+    text = text
         .replaceAll(RegExp(r'<[^>]*>'), '')
         .replaceAll('&nbsp;', ' ')
         .replaceAll('&amp;', '&')
@@ -188,9 +194,9 @@ class TorahTextViewer extends StatelessWidget {
         .replaceAll('&rlm;', '')
         .replaceAll('&zwj;', '')
         .replaceAll('&zwnj;', '')
-        .replaceAll(RegExp(r'&#\d+;'), '')
         .replaceAll(RegExp(r'&\w+;'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'[ \t]+'), ' ')  // Only collapse spaces/tabs, not newlines
         .trim();
+    return text;
   }
 }

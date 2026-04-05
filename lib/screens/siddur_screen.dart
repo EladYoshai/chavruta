@@ -416,8 +416,8 @@ class _PrayerViewScreenState extends State<PrayerViewScreen> {
                               child: Text(
                                 clean,
                                 style: GoogleFonts.rubik(
-                                  fontSize: 20,
-                                  height: 1.8,
+                                  fontSize: 22,
+                                  height: 2.0,
                                   color: AppColors.darkBrown,
                                 ),
                               ),

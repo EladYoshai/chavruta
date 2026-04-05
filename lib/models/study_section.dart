@@ -8,6 +8,9 @@ enum StudySectionType {
   mishna,
   emunah,
   gemara,
+  rambam,
+  shmiratHalashon,
+  pirkeiAvot,
 }
 
 class StudySection {
@@ -83,6 +86,33 @@ class StudySection {
           color: const Color(0xFFC62828),
           zuzimReward: ZuzimRewards.gemaraComplete,
           key: 'gemara',
+        ),
+        StudySection(
+          type: StudySectionType.rambam,
+          title: 'רמב"ם יומי',
+          subtitle: 'פרק יומי ברמב"ם',
+          icon: Icons.account_balance,
+          color: const Color(0xFF1565C0),
+          zuzimReward: 10,
+          key: 'rambam',
+        ),
+        StudySection(
+          type: StudySectionType.shmiratHalashon,
+          title: 'שמירת הלשון',
+          subtitle: 'חפץ חיים - הלכות לשון הרע',
+          icon: Icons.record_voice_over,
+          color: const Color(0xFF00695C),
+          zuzimReward: 10,
+          key: 'shmirat_halashon',
+        ),
+        StudySection(
+          type: StudySectionType.pirkeiAvot,
+          title: 'פרקי אבות',
+          subtitle: 'פרק שבועי במסכת אבות',
+          icon: Icons.groups,
+          color: const Color(0xFF4E342E),
+          zuzimReward: 10,
+          key: 'pirkei_avot',
         ),
       ];
 }
