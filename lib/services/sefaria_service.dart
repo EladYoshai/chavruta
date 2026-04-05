@@ -244,11 +244,61 @@ class SefariaService {
     final onkelosData = await _safeGetText('Onkelos_$cleanRef');
     final rashiData = await _safeGetText('Rashi_on_$cleanRef');
 
+    // Extract per-pasuk segments (not flattened)
+    final mikra = _extractHebrewSegments(mikraData);
+    final onkelos = onkelosData != null ? _extractHebrewSegments(onkelosData) : <String>[];
+    // Rashi is nested (list of comments per pasuk) - flatten each sub-list
+    final rashiRaw = _extractHebrewRawSegments(rashiData);
+    final rashi = <String>[];
+    for (final seg in rashiRaw) {
+      if (seg is List) {
+        rashi.add(seg.whereType<String>().where((s) => s.isNotEmpty).join('\n'));
+      } else if (seg is String) {
+        rashi.add(seg);
+      } else {
+        rashi.add('');
+      }
+    }
+
     return {
-      'mikra': _extractHebrewText(mikraData),
-      'onkelos': onkelosData != null ? _extractHebrewText(onkelosData) : [],
-      'rashi': rashiData != null ? _extractHebrewText(rashiData) : [],
+      'mikra': mikra,
+      'onkelos': onkelos,
+      'rashi': rashi,
     };
+  }
+
+  /// Extract Hebrew text as per-segment list (one string per pasuk)
+  List<String> _extractHebrewSegments(Map<String, dynamic> data) {
+    final versions = data['versions'] as List?;
+    if (versions == null) return [];
+    for (final version in versions) {
+      if (version['actualLanguage'] == 'he' && version['text'] != null) {
+        final text = version['text'];
+        if (text is List) {
+          return text.map((item) {
+            if (item is String) return item;
+            if (item is List) return _flattenText(item).join(' ');
+            return '';
+          }).toList().cast<String>();
+        }
+        if (text is String) return [text];
+      }
+    }
+    return [];
+  }
+
+  /// Extract raw Hebrew segments preserving nested structure (for Rashi)
+  List<dynamic> _extractHebrewRawSegments(Map<String, dynamic>? data) {
+    if (data == null) return [];
+    final versions = data['versions'] as List?;
+    if (versions == null) return [];
+    for (final version in versions) {
+      if (version['actualLanguage'] == 'he' && version['text'] != null) {
+        final text = version['text'];
+        if (text is List) return text;
+      }
+    }
+    return [];
   }
 
   /// Fetch Halacha Yomit from Shulchan Aruch + commentary

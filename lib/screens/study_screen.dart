@@ -138,28 +138,43 @@ class _StudyScreenState extends State<StudyScreen> {
 
     final texts = await _sefaria.getShnayimMikra(aliyahRef);
 
-    _blocks = [
-      TextBlock(
-        label: '📖 מקרא - ${calendar.parshaHeName} ($aliyahLabel)',
-        segments: texts['mikra'] ?? [],
-        isBold: true,
-        labelColor: AppColors.darkGold,
-      ),
-      if ((texts['onkelos'] ?? []).isNotEmpty)
-        TextBlock(
-          label: '📜 תרגום אונקלוס',
-          segments: texts['onkelos'] ?? [],
-          isBold: false,
-          labelColor: const Color(0xFF5D4037),
-        ),
-      if ((texts['rashi'] ?? []).isNotEmpty)
-        TextBlock(
-          label: '🔍 פירוש רש"י',
-          segments: texts['rashi'] ?? [],
-          isBold: false,
-          labelColor: const Color(0xFF1565C0),
-        ),
-    ];
+    final mikra = texts['mikra'] ?? [];
+    final onkelos = texts['onkelos'] ?? [];
+    final rashi = texts['rashi'] ?? [];
+
+    // Build שניים מקרא ואחד תרגום: per pasuk - mikra twice, then targum, then rashi
+    _blocks = [];
+    _blocks.add(TextBlock(
+      label: '📖 ${calendar.parshaHeName} - $aliyahLabel',
+      segments: ['שניים מקרא ואחד תרגום'],
+      isBold: true,
+      labelColor: AppColors.darkGold,
+    ));
+
+    for (int i = 0; i < mikra.length; i++) {
+      final pasukNum = i + 1;
+      final pasukSegments = <String>[];
+
+      // מקרא - פעם ראשונה
+      if (i < mikra.length) pasukSegments.add(mikra[i]);
+      // מקרא - פעם שנייה
+      if (i < mikra.length) pasukSegments.add(mikra[i]);
+      // תרגום אונקלוס
+      if (i < onkelos.length && onkelos[i].isNotEmpty) {
+        pasukSegments.add('תרגום: ${onkelos[i]}');
+      }
+      // רש"י (may be a list of comments per pasuk)
+      if (i < rashi.length && rashi[i].isNotEmpty) {
+        pasukSegments.add('רש"י: ${rashi[i]}');
+      }
+
+      _blocks.add(TextBlock(
+        label: 'פסוק $pasukNum',
+        segments: pasukSegments,
+        isBold: false,
+        labelColor: const Color(0xFF5D4037),
+      ));
+    }
   }
 
   Future<void> _loadHalacha() async {
