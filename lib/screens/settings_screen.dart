@@ -303,8 +303,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // Notification settings (mobile only)
-              if (!kIsWeb) ...[
+              // Notification settings
+              ...[
                 const SizedBox(height: 20),
                 _buildLabel('תזכורת ללימוד יומי'),
                 const SizedBox(height: 8),
@@ -390,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
 
               // Reminder days
-              if (!kIsWeb && _notificationsEnabled) ...[
+              if (_notificationsEnabled) ...[
                 const SizedBox(height: 12),
                 _buildLabel('ימי תזכורת'),
                 const SizedBox(height: 8),
@@ -409,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
 
               // Omer reminder
-              if (!kIsWeb) ...[
+              ...[
                 const SizedBox(height: 20),
                 _buildLabel('תזכורת לספירת העומר'),
                 const SizedBox(height: 8),
