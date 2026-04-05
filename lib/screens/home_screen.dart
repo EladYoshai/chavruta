@@ -631,7 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Text(
-                      'המתנה של ${progress.meatDairyHours == progress.meatDairyHours.roundToDouble() ? progress.meatDairyHours.toInt() : progress.meatDairyHours} שעות',
+                      'המתנה של ${(progress.meatDairyHours - 5.0167).abs() < 0.01 ? "תחילת שעה שישית" : progress.meatDairyHours == progress.meatDairyHours.roundToDouble() ? "${progress.meatDairyHours.toInt()} שעות" : "${progress.meatDairyHours} שעות"}',
                       style: GoogleFonts.rubik(
                         fontSize: 12,
                         color: Colors.grey.shade600,

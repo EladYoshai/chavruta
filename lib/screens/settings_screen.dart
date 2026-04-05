@@ -397,7 +397,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   children: [
                     Text(
-                      '${_meatDairyHours == _meatDairyHours.roundToDouble() ? _meatDairyHours.toInt().toString() : _meatDairyHours.toString()} שעות',
+                      (_meatDairyHours - 5.0167).abs() < 0.01
+                          ? 'תחילת שעה שישית (5:01)'
+                          : '${_meatDairyHours == _meatDairyHours.roundToDouble() ? _meatDairyHours.toInt().toString() : _meatDairyHours.toString()} שעות',
                       style: GoogleFonts.rubik(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -410,11 +412,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _buildHoursButton(1),
-                        _buildHoursButton(3),
-                        _buildHoursButton(4),
-                        _buildHoursButton(5.5),
-                        _buildHoursButton(6),
+                        _buildHoursButton(1, null),
+                        _buildHoursButton(3, null),
+                        _buildHoursButton(4, null),
+                        _buildHoursButton(5, 'תחילת שעה שישית'),
+                        _buildHoursButton(5.5, null),
+                        _buildHoursButton(6, null),
                       ],
                     ),
                   ],
@@ -630,13 +633,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildHoursButton(double hours) {
-    final isSelected = _meatDairyHours == hours;
-    final label = hours == hours.roundToDouble()
+  Widget _buildHoursButton(double hours, String? customLabel) {
+    // 5 hours = "תחילת שעה שישית" = 5 hours and 1 minute (stored as 5.0167)
+    final storeValue = hours == 5 ? 5.0167 : hours;
+    final isSelected = (_meatDairyHours - storeValue).abs() < 0.01;
+    final label = customLabel ?? (hours == hours.roundToDouble()
         ? '${hours.toInt()} שעות'
-        : '$hours שעות';
+        : '$hours שעות');
     return GestureDetector(
-      onTap: () => setState(() => _meatDairyHours = hours),
+      onTap: () => setState(() => _meatDairyHours = storeValue),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
