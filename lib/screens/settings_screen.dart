@@ -486,6 +486,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 },
               ),
+            // About / Credits
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'אודות',
+                    style: GoogleFonts.rubik(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'חברותא - לימוד תורה יומי\n'
+                    'גרסה 1.0.0\n\n'
+                    'טקסטים מקודשים באדיבות Sefaria.org\n'
+                    'ספרייה פתוחה של טקסטים יהודיים\n\n'
+                    'להצלחת עם ישראל 🇮🇱',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.rubik(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             ],
           ),
         ),
