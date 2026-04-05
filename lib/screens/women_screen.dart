@@ -197,14 +197,34 @@ class _TefilatChanaScreenState extends State<TefilatChanaScreen> {
       ref: 'I_Samuel.1.10-2.10',
     ),
     _WomenPrayer(
-      name: 'תפילה לפני הדלקת נרות',
-      description: 'תפילה להדלקת נרות שבת',
-      ref: 'Siddur_Sefard,_Blessings,_Shabbat_Candle_Lighting',
+      name: 'הדלקת נרות שבת',
+      description: 'סדר הדלקת נרות שבת',
+      ref: 'Siddur_Sefard,_Shabbat_Candle_Lighting',
     ),
     _WomenPrayer(
-      name: 'תפילת הדרך',
-      description: 'תפילה לפני יציאה לדרך',
-      ref: 'Siddur_Sefard,_Blessings,_Travelers_Prayer',
+      name: 'תפילת השל"ה',
+      description: 'תפילה על הילדים - מהשל"ה הקדוש',
+      ref: 'Siddur_Sefard,_Various_Prayers_%26_Segulot,_Prayer_of_the_Shelah',
+    ),
+    _WomenPrayer(
+      name: 'אשת חיל',
+      description: 'משלי ל"א - שירת אשת חיל',
+      ref: 'Siddur_Sefard,_Shabbat_Evening_Meal,_Eishet_Chayil',
+    ),
+    _WomenPrayer(
+      name: 'ברכת הבנים',
+      description: 'ברכת הילדים בליל שבת',
+      ref: 'Siddur_Sefard,_Shabbat_Evening_Meal,_Blessing_the_Children',
+    ),
+    _WomenPrayer(
+      name: 'מי שברך ליולדת',
+      description: 'תפילה לאחר לידה',
+      ref: 'Siddur_Sefard,_Shabbat_Morning_Services,_Prayer_for_Mother_after_Chilbirth',
+    ),
+    _WomenPrayer(
+      name: 'תפילה על הפרנסה',
+      description: 'בקשה לפרנסה טובה',
+      ref: 'Siddur_Sefard,_Various_Prayers_%26_Segulot,_Prayer_for_Livelihood',
     ),
     _WomenPrayer(
       name: 'ברכות השחר',
@@ -221,6 +241,11 @@ class _TefilatChanaScreenState extends State<TefilatChanaScreen> {
       name: 'נשמת כל חי',
       description: 'תפילת שבת ומועדים',
       ref: 'Siddur_Sefard,_Shabbat_Morning_Services,_Nishmat',
+    ),
+    _WomenPrayer(
+      name: 'תפילת הדרך',
+      description: 'תפילה לפני יציאה לדרך',
+      ref: 'Siddur_Sefard,_Blessings,_Travelers_Prayer',
     ),
   ];
 
@@ -485,67 +510,67 @@ class _WomenPrayer {
   });
 }
 
-/// הפרשת חלה - Full nusach
-class HafrashatChallahScreen extends StatefulWidget {
+/// הפרשת חלה - Full nusach with tefilot
+class HafrashatChallahScreen extends StatelessWidget {
   const HafrashatChallahScreen({super.key});
 
-  @override
-  State<HafrashatChallahScreen> createState() => _HafrashatChallahScreenState();
-}
-
-class _HafrashatChallahScreenState extends State<HafrashatChallahScreen> {
-  final SefariaService _sefaria = SefariaService();
-  List<String> _text = [];
-  bool _isLoading = true;
-
-  // Nusach-specific refs for hafrashat challah
-  static const _challahRefs = {
-    'sefard': 'Siddur_Sefard,_Blessings,_Separating_Challah',
-    'edot_hamizrach': 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Separating_Hallah',
-    'ashkenaz': 'Siddur_Sefard,_Blessings,_Separating_Challah', // fallback to sefard
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _loadText();
-  }
-
-  Future<void> _loadText() async {
-    final nusach = context.read<AppState>().progress.nusach;
-    final ref = _challahRefs[nusach] ?? _challahRefs['sefard']!;
-
-    try {
-      final data = await _sefaria.getText(ref);
-      final versions = data['versions'] as List?;
-      if (versions != null) {
-        for (final version in versions) {
-          if (version['actualLanguage'] == 'he' && version['text'] != null) {
-            final text = version['text'];
-            if (text is List) {
-              _text = _flatten(text);
-            } else if (text is String) {
-              _text = [text];
-            }
-            break;
-          }
-        }
-      }
-    } catch (_) {
-      _text = ['לא ניתן לטעון את הנוסח. נסה שוב מאוחר יותר.'];
-    }
-
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  List<String> _flatten(List<dynamic> list) {
-    final result = <String>[];
-    for (final item in list) {
-      if (item is String && item.isNotEmpty) result.add(item);
-      if (item is List) result.addAll(_flatten(item));
-    }
-    return result;
-  }
+  static const _sections = [
+    _ChallahSection(
+      title: 'תפילה ובקשה לפני ההפרשה',
+      text: '(הריני באה להפריש חלה) יהי רצון מלפניך ה\' אלוקינו ואלוקי אבותינו '
+          'שבזכות מצווה זו ובזכות הפרשת התרומה יתוקן עוון חוה אם כל חי שסבבה מיתתו '
+          'לאדם הראשון שהוא עיסתו של עולם ובזכות מצווה זו תבטל המוות מן העולם ותמחה '
+          'דמעה מעל פנים ותשלח ברכה בביתנו אמן כן יהיה רצון.\n\n'
+          'וכן יהי רצון מלפניך שתברך עיסותינו כמו ששלחת בה ברכה בעיסות אימותינו '
+          'שרה, רבקה, רחל ולאה ויקוים בנו הפסוק "ראשית עריסותיכם תתנו לכהן להניח '
+          'ברכה אל ביתך" אמן כן יהי רצון.\n\n'
+          'הריני באה לקיים מצות הפרשת חלה לתקן שורשה במקום עליון לעשות נחת רוח '
+          'ליוצרנו ולעשות רצון בוראנו.\n\n'
+          'ויהי נועם ה\' אלוקינו עלינו ומעשה ידינו כוננה עלינו ומעשה ידינו כוננהו.',
+    ),
+    _ChallahSection(
+      title: 'סדר הפרשת חלה',
+      text: 'טוב ליטול ידיים שלוש פעמים לסירוגין ולתת צדקה.\n\n'
+          'הפרשת חלה עצמה מחולקת לשלושה שלבים: ברכת הפרשת החלה, הפרשת חתיכת '
+          'החלה מהעיסה ואמירת "הרי זו חלה".',
+    ),
+    _ChallahSection(
+      title: 'ברכת הפרשת החלה למנהג הספרדים',
+      text: 'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ '
+          'בְּמִצְוֹתָיו, וְצִוָּנוּ לְהַפְרִישׁ חַלָּה תְּרוּמָה.',
+    ),
+    _ChallahSection(
+      title: 'ברכת הפרשת החלה למנהג האשכנזים',
+      text: 'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ '
+          'בְּמִצְוֹתָיו, וְצִוָּנוּ לְהַפְרִישׁ חַלָּה.\n\n'
+          'ויש הנוהגים לברך: בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, '
+          'אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו, וְצִוָּנוּ לְהַפְרִישׁ חַלָּה מִן הָעִיסָה.',
+    ),
+    _ChallahSection(
+      title: 'הפרשת החלה',
+      text: 'לוקחים חתיכה קטנה מן העיסה, מרימים אותה ואומרים:\n\n'
+          '"הֲרֵי זוֹ חַלָּה"',
+    ),
+    _ChallahSection(
+      title: 'תחינה לאמירה לאחר הפרשת חלה',
+      text: 'יהי רצון מלפניך ה\' אלוקינו ואלוקי אבותינו שהמצווה של הפרשת חלה '
+          'תחשב כאילו קיימתיה בכל פרטיה ודקדוקיה, ותחשב הרמת החלה שאנו מרימים '
+          'כמו הקרבן שהוקרב על המזבח שהתקבל ברצון, וכמו שלפנים הייתה החלה נתונה '
+          'לכהן והייתה זו לכפרת עוונות, כך תהיה לכפרת עוונותיי ואז אהיה כאילו '
+          'נולדתי מחדש נקייה מחטא ועוון ואוכל לקיים מצוות שבת קודש והימים הטובים '
+          'עם בעלי להיות ניזונים מקדושת הימים האלה ומהשפעתה של מצוות חלה כאילו '
+          'נתתי מעשר, וכשם שהנני מקיימת מצוות חלה בכל הלב, כך יתעוררו רחמיו של '
+          'הקב"ה לשומרני מצער וממכאובים כל הימים. אמן.',
+    ),
+    _ChallahSection(
+      title: 'תפילה על הגאולה',
+      text: 'טוב וראוי להוסיף תפילה זו על הגאולה:\n\n'
+          'יהי רצון מלפניך רבש"ע שתרחם על כל איש ואישה, קטן או גדול. יחיד או '
+          'רבים מעמך ישראל, אשר הם שרויים בצער, אנא ה\' תצילם מצרתם, ברכם '
+          'מברכותיך, החזירם בתשובה שלמה, ותגאלינו גאולה שלימה למען שמך, ככתוב: '
+          '"והיה ה\' למלך על כל הארץ, ביום ההוא יהיה ה\' אחד ושמו אחד".',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -558,56 +583,73 @@ class _HafrashatChallahScreenState extends State<HafrashatChallahScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFF4E342E)),
-                  SizedBox(height: 16),
-                  Text('...טוען נוסח הפרשת חלה'),
-                ],
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4E342E).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
               ),
-            )
-          : Directionality(
-              textDirection: TextDirection.rtl,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4E342E).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('🍞', style: TextStyle(fontSize: 36)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'נוסח הפרשת חלה',
-                          style: GoogleFonts.rubik(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF4E342E),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'מפרישים חלה מעיסה שיש בה לפחות 1.666 ק"ג קמח',
-                          style: GoogleFonts.rubik(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                  const Text('🍞', style: TextStyle(fontSize: 36)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'סדר הפרשת חלה',
+                    style: GoogleFonts.rubik(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF4E342E),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Text
+                  const SizedBox(height: 4),
+                  Text(
+                    'מפרישים חלה מעיסה שיש בה לפחות 1.666 ק"ג קמח',
+                    style: GoogleFonts.rubik(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // All sections
+            ..._sections.map((section) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section title
                   Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4E342E).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF4E342E).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      section.title,
+                      style: GoogleFonts.rubik(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF4E342E),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Section text
+                  Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.cream,
@@ -616,30 +658,29 @@ class _HafrashatChallahScreenState extends State<HafrashatChallahScreen> {
                         color: AppColors.gold.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _text.map((segment) {
-                        final clean = TorahTextViewer.stripHtml(segment);
-                        if (clean.isEmpty) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            clean,
-                            style: GoogleFonts.rubik(
-                              fontSize: 22,
-                              height: 2.0,
-                              color: AppColors.darkBrown,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                    child: Text(
+                      section.text,
+                      style: GoogleFonts.rubik(
+                        fontSize: 22,
+                        height: 2.0,
+                        color: AppColors.darkBrown,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
+            )),
+          ],
+        ),
+      ),
     );
   }
+}
+
+class _ChallahSection {
+  final String title;
+  final String text;
+  const _ChallahSection({required this.title, required this.text});
 }
 
 /// הלכות נידה - Discreet halacha reference (SA YD 183-200)
@@ -948,27 +989,43 @@ class NiddahCalculatorScreen extends StatefulWidget {
 
 class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
   DateTime? _startDate;
+  DateTime? _endDate;
+  bool _startedAfterShkia = false;
   bool _showResults = false;
 
-  // Standard calculation:
-  // Minimum 5 days of niddah
-  // Then hefsek tahara
-  // Then 7 clean days (shivah nekiim)
-  // Mikvah night = evening after 7th clean day
+  // Halachic day starts at shkia.
+  // If started after shkia, count from next day.
+  // Hefsek tahara = on the day the vest ended (or day 5, whichever is later), before shkia.
+  // Then 7 clean days.
+  // Mikvah night = evening after 7th clean day.
 
+  /// The halachic start date (if after shkia, next day counts as day 1)
+  DateTime get _halachicStartDate {
+    if (_startedAfterShkia) {
+      return _startDate!.add(const Duration(days: 1));
+    }
+    return _startDate!;
+  }
+
+  /// Earliest hefsek tahara: day 5 from halachic start, or the end date - whichever is later
   DateTime get _hefsekDate {
-    // Hefsek tahara on day 5 (4 days after start)
-    return _startDate!.add(const Duration(days: 4));
+    final minDay5 = _halachicStartDate.add(const Duration(days: 4)); // day 5
+    if (_endDate != null && _endDate!.isAfter(minDay5)) {
+      return _endDate!;
+    }
+    return minDay5;
   }
 
   DateTime get _firstCleanDay {
-    // First clean day = day after hefsek
     return _hefsekDate.add(const Duration(days: 1));
   }
 
   DateTime get _mikvahNight {
-    // Mikvah on evening after 7th clean day (6 days after first clean day)
     return _firstCleanDay.add(const Duration(days: 6));
+  }
+
+  int get _niddahDays {
+    return _hefsekDate.difference(_halachicStartDate).inDays + 1;
   }
 
   String _formatDate(DateTime date) {
@@ -976,6 +1033,33 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
       'יום חמישי', 'יום שישי', 'שבת'];
     final dayName = dayNames[date.weekday % 7];
     return '$dayName ${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<DateTime?> _pickDate(DateTime? initial) async {
+    return showDatePicker(
+      context: context,
+      initialDate: initial ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 60)),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF1565C0),
+              ),
+            ),
+            child: child!,
+          ),
+        );
+      },
+    );
+  }
+
+  void _calculate() {
+    if (_startDate == null || _endDate == null) return;
+    setState(() => _showResults = true);
   }
 
   @override
@@ -1009,7 +1093,7 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'מחשבון זה לעיון בלבד ומבוסס על חישוב סטנדרטי. לשאלות מעשיות יש לפנות לרב מוסמך.',
+                      'מחשבון זה לעיון בלבד. לשאלות מעשיות יש לפנות לרב מוסמך.',
                       style: GoogleFonts.rubik(
                         fontSize: 13,
                         color: Colors.amber.shade900,
@@ -1021,88 +1105,128 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Date picker
-            Text(
-              'תאריך תחילת הווסת',
-              style: GoogleFonts.rubik(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darkBrown,
-              ),
-            ),
-            const SizedBox(height: 10),
-            GestureDetector(
+            // Question 1: When did the vest start?
+            _buildLabel('מתי הופיעה הווסת?'),
+            const SizedBox(height: 8),
+            _buildDateButton(
+              date: _startDate,
+              placeholder: 'בחרי תאריך תחילת הווסת',
               onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _startDate ?? DateTime.now(),
-                  firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                  lastDate: DateTime.now().add(const Duration(days: 30)),
-                  builder: (context, child) {
-                    return Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: Color(0xFF1565C0),
-                          ),
-                        ),
-                        child: child!,
-                      ),
-                    );
-                  },
-                );
+                final picked = await _pickDate(_startDate);
                 if (picked != null) {
                   setState(() {
                     _startDate = picked;
-                    _showResults = true;
+                    _showResults = false;
                   });
                 }
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF1565C0).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today,
-                        color: Color(0xFF1565C0), size: 22),
-                    const SizedBox(width: 12),
-                    Text(
-                      _startDate != null
-                          ? _formatDate(_startDate!)
-                          : 'בחרי תאריך',
-                      style: GoogleFonts.rubik(
-                        fontSize: 16,
-                        color: _startDate != null
-                            ? AppColors.darkBrown
-                            : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
 
-            if (_showResults && _startDate != null) ...[
+            // Question 2: Before or after shkia?
+            if (_startDate != null) ...[
+              const SizedBox(height: 16),
+              _buildLabel('האם הווסת הופיעה לפני או אחרי השקיעה?'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildToggleButton(
+                      'לפני השקיעה',
+                      !_startedAfterShkia,
+                      () => setState(() {
+                        _startedAfterShkia = false;
+                        _showResults = false;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildToggleButton(
+                      'אחרי השקיעה',
+                      _startedAfterShkia,
+                      () => setState(() {
+                        _startedAfterShkia = true;
+                        _showResults = false;
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+              if (_startedAfterShkia)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'יום ההלכתי מתחיל ב${_formatDate(_halachicStartDate)}',
+                    style: GoogleFonts.rubik(
+                      fontSize: 12,
+                      color: const Color(0xFF1565C0),
+                    ),
+                  ),
+                ),
+
+              // Question 3: When did the vest end?
+              const SizedBox(height: 16),
+              _buildLabel('מתי הסתיימה הווסת?'),
+              const SizedBox(height: 8),
+              _buildDateButton(
+                date: _endDate,
+                placeholder: 'בחרי תאריך סיום הווסת',
+                onTap: () async {
+                  final picked = await _pickDate(_endDate ?? _startDate);
+                  if (picked != null) {
+                    setState(() {
+                      _endDate = picked;
+                      _showResults = false;
+                    });
+                  }
+                },
+              ),
+            ],
+
+            // Calculate button
+            if (_startDate != null && _endDate != null) ...[
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _calculate,
+                  icon: const Icon(Icons.calculate),
+                  label: Text(
+                    'חשב',
+                    style: GoogleFonts.rubik(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            if (_showResults && _startDate != null && _endDate != null) ...[
               const SizedBox(height: 24),
               // Results
               _buildResultCard(
                 icon: '🔴',
-                title: 'ימי נידה (מינימום 5 ימים)',
-                subtitle: '${_formatDate(_startDate!)} - ${_formatDate(_hefsekDate)}',
+                title: 'ימי נידה ($_niddahDays ימים)',
+                subtitle: '${_formatDate(_halachicStartDate)} - ${_formatDate(_hefsekDate)}',
+                detail: _niddahDays > 5
+                    ? 'הווסת נמשכה יותר מ-5 ימים'
+                    : 'מינימום 5 ימים',
                 color: Colors.red.shade700,
               ),
               _buildResultCard(
                 icon: '🟡',
                 title: 'הפסק טהרה',
                 subtitle: 'ערב ${_formatDate(_hefsekDate)}',
-                detail: 'לפני השקיעה של יום ה-5',
+                detail: 'לפני השקיעה',
                 color: Colors.orange.shade700,
               ),
               _buildResultCard(
@@ -1122,7 +1246,6 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
               ),
 
               const SizedBox(height: 16),
-              // Summary
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -1135,7 +1258,7 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'סה"כ ${_mikvahNight.difference(_startDate!).inDays + 1} ימים',
+                      'סה"כ ${_mikvahNight.difference(_halachicStartDate).inDays + 1} ימים',
                       style: GoogleFonts.rubik(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1144,7 +1267,7 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '5 ימי נידה + 7 נקיים = 12 ימים מינימום',
+                      '$_niddahDays ימי נידה + 7 נקיים',
                       style: GoogleFonts.rubik(
                         fontSize: 13,
                         color: Colors.grey.shade600,
@@ -1155,6 +1278,81 @@ class _NiddahCalculatorScreenState extends State<NiddahCalculatorScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.rubik(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.darkBrown,
+      ),
+    );
+  }
+
+  Widget _buildDateButton({
+    required DateTime? date,
+    required String placeholder,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF1565C0).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today,
+                color: Color(0xFF1565C0), size: 22),
+            const SizedBox(width: 12),
+            Text(
+              date != null ? _formatDate(date) : placeholder,
+              style: GoogleFonts.rubik(
+                fontSize: 16,
+                color: date != null ? AppColors.darkBrown : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1565C0) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF1565C0)
+                : AppColors.gold.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.rubik(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.darkBrown,
+            ),
+          ),
         ),
       ),
     );
