@@ -153,6 +153,26 @@ class SiddurStructure {
         }
       }
 
+      // Insert ספירת העומר after ערבית
+      final omerRefs = {
+        'sefard': 'Siddur_Sefard,_Weekday_Maariv,_Sefirat_HaOmer',
+        'edot_hamizrach': 'Siddur_Edot_HaMizrach,_Counting_of_the_Omer',
+        'ashkenaz': 'Siddur_Ashkenaz,_Weekday,_Maariv,_Sefirat_HaOmer',
+      };
+      final omerRef = omerRefs[nusach] ?? omerRefs['sefard']!;
+      final omerCategory = PrayerCategory(
+        name: 'ספירת העומר',
+        icon: '🌾',
+        items: [PrayerItem(name: 'ספירת העומר', ref: omerRef)],
+      );
+      // Find ערבית index and insert after it
+      final arvitIndex = categories.indexWhere((c) => c.name == 'ערבית');
+      if (arvitIndex >= 0) {
+        categories.insert(arvitIndex + 1, omerCategory);
+      } else {
+        categories.add(omerCategory);
+      }
+
       _cachedCategories = categories;
       _cachedNusach = nusach;
       return categories;
