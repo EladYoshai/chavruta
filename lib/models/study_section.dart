@@ -1,0 +1,88 @@
+import 'package:flutter/material.dart';
+import '../utils/constants.dart';
+
+enum StudySectionType {
+  tehillim,
+  shnayimMikra,
+  halacha,
+  mishna,
+  emunah,
+  gemara,
+}
+
+class StudySection {
+  final StudySectionType type;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final int zuzimReward;
+  final String key;
+
+  const StudySection({
+    required this.type,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.zuzimReward,
+    required this.key,
+  });
+
+  static List<StudySection> get dailySections => [
+        StudySection(
+          type: StudySectionType.tehillim,
+          title: AppStrings.tehillim,
+          subtitle: 'פרק תהילים היומי',
+          icon: Icons.menu_book,
+          color: AppColors.deepBlue,
+          zuzimReward: ZuzimRewards.tehillimComplete,
+          key: 'tehillim',
+        ),
+        StudySection(
+          type: StudySectionType.shnayimMikra,
+          title: AppStrings.shnayimMikra,
+          subtitle: 'פרשת השבוע',
+          icon: Icons.auto_stories,
+          color: AppColors.darkGold,
+          zuzimReward: ZuzimRewards.shnayimMikraComplete,
+          key: 'shnayim_mikra',
+        ),
+        StudySection(
+          type: StudySectionType.halacha,
+          title: AppStrings.halacha,
+          subtitle: 'משנה ברורה',
+          icon: Icons.gavel,
+          color: AppColors.success,
+          zuzimReward: ZuzimRewards.halachaComplete,
+          key: 'halacha',
+        ),
+        StudySection(
+          type: StudySectionType.mishna,
+          title: AppStrings.mishna,
+          subtitle: 'משנה יומית עם ברטנורא',
+          icon: Icons.library_books,
+          color: const Color(0xFF00838F),
+          zuzimReward: ZuzimRewards.mishnaComplete,
+          key: 'mishna',
+        ),
+        StudySection(
+          type: StudySectionType.emunah,
+          title: AppStrings.emunah,
+          subtitle: 'ספר התניא - שיעור יומי',
+          icon: Icons.auto_awesome,
+          color: const Color(0xFF6A1B9A),
+          zuzimReward: ZuzimRewards.emunahComplete,
+          key: 'emunah',
+        ),
+        StudySection(
+          type: StudySectionType.gemara,
+          title: AppStrings.gemara,
+          subtitle: 'הדף היומי עם פרשנים וסיכום',
+          icon: Icons.school,
+          color: const Color(0xFFC62828),
+          zuzimReward: ZuzimRewards.gemaraComplete,
+          key: 'gemara',
+        ),
+      ];
+}

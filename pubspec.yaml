@@ -1,0 +1,51 @@
+name: torah_app
+description: "חברותא - לימוד תורה יומי עם הנעה ומוטיבציה"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # HTTP client for Sefaria API
+  http: ^1.4.0
+  # Local storage
+  shared_preferences: ^2.5.0
+  # State management
+  provider: ^6.1.0
+  # Hebrew date calculations
+  kosher_dart: ^2.0.19
+  # JSON serialization
+  json_annotation: ^4.9.0
+  # Google Fonts for Hebrew typography
+  google_fonts: ^6.2.0
+  # Animations
+  lottie: ^3.3.1
+  # Notifications
+  flutter_local_notifications: ^19.0.0
+  # Timezone for scheduled notifications
+  timezone: ^0.10.0
+  # Intl for formatting
+  intl: ^0.20.2
+  # Location for zmanim
+  geolocator: ^13.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  json_serializable: ^6.9.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/animations/
+    - assets/fonts/
+    - assets/images/
+    - assets/images/avatars/
+    - assets/data/
