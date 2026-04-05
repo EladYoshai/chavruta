@@ -29,6 +29,10 @@ const List<ShopItem> shopItems = [
   ShopItem(id: 'rebbetzin', emoji: '', name: 'הרבנית', description: 'רבנית עם נרות שבת', price: 0, category: 'avatar', imagePath: 'assets/images/avatars/rebbetzin.png'),
   ShopItem(id: 'talmid_chacham', emoji: '', name: 'תלמיד חכם', description: 'תלמיד חכם עם גמרא', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/talmid_chacham.png'),
   ShopItem(id: 'chacham_sefardi', emoji: '', name: 'חכם ספרדי', description: 'חכם עם קולמוס וקלף', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/chacham_sefardi.png'),
+  ShopItem(id: 'morenu_verabenu', emoji: '', name: 'מורינו ורבינו', description: 'מורה תורה בבית המדרש', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/morenu_verabenu.png'),
+  ShopItem(id: 'tzaddik_nistar', emoji: '', name: 'צדיק נסתר', description: 'צדיק נסתר עם הילה זהובה', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/tzaddik_nistar.png'),
+  ShopItem(id: 'tzaddeket', emoji: '', name: 'צדיקה', description: 'צדיקה בגן של אור', price: 0, category: 'avatar', imagePath: 'assets/images/avatars/tzaddeket.png'),
+  ShopItem(id: 'gavra_raba', emoji: '', name: 'גברא רבא', description: 'רב שקוע בלימוד הספרים', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/gavra_raba.png'),
 
   // === Avatars - Emoji Foods ===
   ShopItem(id: '🫓', emoji: '🫓', name: "ג'חנון", description: "!ג'חנון חם בשבת בבוקר", price: 90, category: 'avatar'),

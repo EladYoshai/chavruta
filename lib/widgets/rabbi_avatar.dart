@@ -13,6 +13,10 @@ class AvatarAssets {
     'rebbetzin': 'assets/images/avatars/rebbetzin.png',
     'talmid_chacham': 'assets/images/avatars/talmid_chacham.png',
     'chacham_sefardi': 'assets/images/avatars/chacham_sefardi.png',
+    'morenu_verabenu': 'assets/images/avatars/morenu_verabenu.png',
+    'tzaddik_nistar': 'assets/images/avatars/tzaddik_nistar.png',
+    'tzaddeket': 'assets/images/avatars/tzaddeket.png',
+    'gavra_raba': 'assets/images/avatars/gavra_raba.png',
   };
 
   /// Check if an avatar ID is an image-based avatar
