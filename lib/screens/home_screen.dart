@@ -19,6 +19,8 @@ import 'quiz_screen.dart';
 import 'achievements_screen.dart';
 import 'shop_screen.dart';
 import 'siddur_screen.dart';
+import 'women_screen.dart';
+import 'siyum_yahrzeit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -527,6 +529,59 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
+                // Women's section (shown for נקבה)
+                if (progress.isFemale)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WomenScreen(),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                                const Color(0xFF8E24AA).withValues(alpha: 0.06),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF6A1B9A).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: Row(
+                              children: [
+                                const Text('👩', style: TextStyle(fontSize: 22)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'עולם האישה • תפילות ומצוות',
+                                    style: GoogleFonts.rubik(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.darkBrown,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_back_ios,
+                                    color: Color(0xFF6A1B9A), size: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Meat/dairy timer
                 SliverToBoxAdapter(
                   child: Padding(
@@ -685,6 +740,50 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+                // Tools section: Siyum + Yahrzeit
+                const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildToolCard(
+                              context,
+                              emoji: '📚',
+                              label: 'סיום מסכת',
+                              color: const Color(0xFFC62828),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SiyumTrackerScreen()),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildToolCard(
+                              context,
+                              emoji: '🕯️',
+                              label: 'מחשבון יארצייט',
+                              color: AppColors.deepBlue,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const YahrzeitScreen()),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
             ),
@@ -814,6 +913,44 @@ class _HomeScreenState extends State<HomeScreen> {
               Icon(Icons.timer, color: AppColors.darkGold, size: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToolCard(
+    BuildContext context, {
+    required String emoji,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.rubik(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );

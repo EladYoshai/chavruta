@@ -51,6 +51,7 @@ class AppState extends ChangeNotifier {
     bool? omerReminderEnabled,
     String? omerReminderTime,
     double? meatDairyHours,
+    bool? candleLightingEnabled,
   }) async {
     _progress.userName = name;
     _progress.gender = gender;
@@ -79,6 +80,9 @@ class AppState extends ChangeNotifier {
     }
     if (meatDairyHours != null) {
       _progress.meatDairyHours = meatDairyHours;
+    }
+    if (candleLightingEnabled != null) {
+      _progress.candleLightingEnabled = candleLightingEnabled;
     }
     await _storage.saveProgress(_progress);
     notifyListeners();

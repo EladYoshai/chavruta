@@ -30,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   TimeOfDay _omerReminderTime = const TimeOfDay(hour: 20, minute: 0);
   String _maritalStatus = '';
   double _meatDairyHours = 6;
+  bool _candleLightingEnabled = false;
 
   @override
   void initState() {
@@ -57,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     _maritalStatus = progress.maritalStatus;
     _meatDairyHours = progress.meatDairyHours.toDouble();
+    _candleLightingEnabled = progress.candleLightingEnabled;
   }
 
   @override
@@ -86,6 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       omerReminderEnabled: _omerReminderEnabled,
       omerReminderTime: '${_omerReminderTime.hour.toString().padLeft(2, '0')}:${_omerReminderTime.minute.toString().padLeft(2, '0')}',
       meatDairyHours: _meatDairyHours,
+      candleLightingEnabled: _candleLightingEnabled,
     );
 
     // Update notification schedule
@@ -112,6 +115,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       } else {
         NotificationService.cancelOmerReminder();
+      }
+
+      // Candle lighting reminder (women)
+      if (_candleLightingEnabled && _selectedGender == 'נקבה') {
+        // Schedule for Friday ~18 min before default shkia (17:42 approx)
+        NotificationService.scheduleCandleLightingReminder(
+          hour: 17,
+          minute: 42,
+        );
+      } else {
+        NotificationService.cancelCandleLightingReminder();
       }
     }
 
@@ -548,6 +562,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }),
                       ],
+                    ],
+                  ),
+                ),
+              ],
+
+              // Candle lighting reminder (women only)
+              if (_selectedGender == 'נקבה') ...[
+                const SizedBox(height: 20),
+                _buildLabel('תזכורת הדלקת נרות שבת'),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'תזכורת כל יום שישי',
+                              style: GoogleFonts.rubik(
+                                fontSize: 16,
+                                color: AppColors.darkBrown,
+                              ),
+                            ),
+                            Text(
+                              '🕯️ לפני הדלקת נרות שבת',
+                              style: GoogleFonts.rubik(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _candleLightingEnabled,
+                        activeTrackColor: const Color(0xFF6A1B9A),
+                        onChanged: (v) =>
+                            setState(() => _candleLightingEnabled = v),
+                      ),
                     ],
                   ),
                 ),

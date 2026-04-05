@@ -61,7 +61,9 @@ lib/
 │   ├── quiz_screen.dart               # Daily 5-question halacha quiz
 │   ├── achievements_screen.dart       # 14 badges with progress tracking
 │   ├── shop_screen.dart               # Avatar shop, titles, streak shields
-│   └── settings_screen.dart           # Profile, gender, nusach, daily goal
+│   ├── settings_screen.dart           # Profile, gender, nusach, daily goal, candle lighting toggle
+│   ├── women_screen.dart              # Women's hub: Tefilat Chana, Challah, Niddah halachot + calculator
+│   └── siyum_yahrzeit_screen.dart     # Siyum masechet tracker + Yahrzeit calculator
 ├── widgets/
 │   ├── rabbi_avatar.dart              # Animated avatar (rabbi/woman, custom emoji from shop)
 │   ├── streak_counter.dart            # Fire streak badge
@@ -208,24 +210,32 @@ tools/
 - iOS builds need a Mac with Xcode (not available in current WSL setup) - use web version instead
 - Daf summary generation needs more dapim (run `generate_summaries.py` with Gemini API key)
 
+### 12. Women's Features (עולם האישה)
+- Hub screen for women (shown when gender=נקבה on home screen)
+- **תפילת חנה** - Collection of women's prayers from Sefaria (Tefilat Chana, candle lighting, tefilat haderech, birchot hashachar, amidah, nishmat)
+- **הפרשת חלה** - Full nusach for hafrashat challah, nusach-aware (Sefard/Edot HaMizrach)
+- **הלכות טהרת המשפחה** - SA YD 183-200 (married women only), discreet UI with siman/seif navigation
+- **מחשבון טהרת המשפחה** - Niddah calculator: hefsek tahara, 7 clean days, mikvah night (married women only)
+- **הדלקת נרות** - Friday candle lighting reminder notification, toggle in settings
+
+### 13. Siyum Masechet Tracker
+- All 37 Bavli masechetot with total dapim
+- Progress bar per masechet, +1/-1 buttons, manual daf entry
+- Siyum celebration dialog with 50 zuzim bonus
+- Progress persisted in SharedPreferences
+
+### 14. Yahrzeit Calculator
+- Date picker for petira date (Gregorian)
+- Converts to Hebrew date, calculates yahrzeit for N years ahead (3/5/10/20)
+- Shows Hebrew + Gregorian dates, highlights upcoming yahrzeit
+
 ## Remaining TODO Features
 These features are planned but not yet implemented:
 
 ### Practical Tools
 - **ברכון דיגיטלי** - Bracha decision tree ("What bracha on...?")
-- **מחשבון תאריכים** - Hebrew ↔ Gregorian date converter + yahrzeit calculator
-- **תזכורת ליארצייט** - Annual notification on Hebrew yahrzeit date
 - **סימניה** - Bookmarks to save place in any text
 - **שיתוף הישגים** - Share badges/streaks on WhatsApp
-
-### Women's Features (shown for נקבה in settings)
-- **הלכות נידה** - Discreet halacha reference (SA YD 183-200), for married women only
-- **הדלקת נרות** - Friday candle lighting reminder notification (18 min before shkia)
-- **תפילת חנה** - Women's prayers collection from Sefaria siddur
-- **הפרשת חלה** - Full nusach for hafrashat challah (available on Sefaria: `Siddur_Sefard,_Blessings,_Separating_Challah` / `Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Separating_Hallah`)
-
-### Gamification
-- **סיום מסכת** - Track progress toward finishing a masechet
 
 ### Additional Learning
 - **חק לישראל** - Daily portions (Sefaria has as collections, not direct API)

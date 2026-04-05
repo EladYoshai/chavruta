@@ -40,6 +40,9 @@ class UserProgress {
   bool omerReminderEnabled;
   String omerReminderTime; // 'HH:mm' format
 
+  // Candle lighting reminder (women)
+  bool candleLightingEnabled;
+
   // Meat/Dairy timer
   double meatDairyHours; // hours to wait (1, 3, 4, 5.5, 6)
   String? lastMeatTime; // ISO datetime when user last ate meat
@@ -77,6 +80,7 @@ class UserProgress {
     this.iluiNeshama = '',
     this.omerReminderEnabled = false,
     this.omerReminderTime = '20:00',
+    this.candleLightingEnabled = false,
     this.meatDairyHours = 6.0,
     this.lastMeatTime,
     List<String>? purchasedAvatars,
@@ -186,6 +190,7 @@ class UserProgress {
         'iluiNeshama': iluiNeshama,
         'omerReminderEnabled': omerReminderEnabled,
         'omerReminderTime': omerReminderTime,
+        'candleLightingEnabled': candleLightingEnabled,
         'meatDairyHours': meatDairyHours,
         'lastMeatTime': lastMeatTime,
         'purchasedAvatars': purchasedAvatars,
@@ -228,6 +233,7 @@ class UserProgress {
         iluiNeshama: json['iluiNeshama'] ?? '',
         omerReminderEnabled: json['omerReminderEnabled'] ?? false,
         omerReminderTime: json['omerReminderTime'] ?? '20:00',
+        candleLightingEnabled: json['candleLightingEnabled'] ?? false,
         meatDairyHours: (json['meatDairyHours'] ?? 6).toDouble(),
         lastMeatTime: json['lastMeatTime'],
         purchasedAvatars: json['purchasedAvatars'] != null

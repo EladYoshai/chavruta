@@ -15,11 +15,13 @@ class NotificationService {
   static const String _streakChannelId = 'streak_warning';
   static const String _milestoneChannelId = 'milestone';
   static const String _omerChannelId = 'omer_reminder';
+  static const String _candleLightingChannelId = 'candle_lighting';
 
   // Notification IDs
   static const int _dailyReminderId = 1;
   static const int _streakWarningId = 2;
   static const int _omerReminderId = 3;
+  static const int _candleLightingId = 4;
   static const int _milestoneBaseId = 100;
 
   /// Initialize notification service
@@ -233,6 +235,52 @@ class NotificationService {
   static Future<void> cancelOmerReminder() async {
     if (kIsWeb || !_initialized) return;
     await _plugin.cancel(_omerReminderId);
+  }
+
+  /// Schedule candle lighting reminder for Friday
+  /// Schedules a weekly notification for Friday at the given time
+  static Future<void> scheduleCandleLightingReminder({
+    required int hour,
+    required int minute,
+  }) async {
+    if (kIsWeb || !_initialized) return;
+
+    await _plugin.cancel(_candleLightingId);
+
+    // Find next Friday
+    final now = DateTime.now();
+    var friday = now;
+    while (friday.weekday != DateTime.friday) {
+      friday = friday.add(const Duration(days: 1));
+    }
+    var scheduledDate = DateTime(friday.year, friday.month, friday.day, hour, minute);
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 7));
+    }
+
+    await _plugin.zonedSchedule(
+      _candleLightingId,
+      'חברותא - הדלקת נרות שבת 🕯️',
+      'הגיע הזמן להדליק נרות שבת!',
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _candleLightingChannelId,
+          'הדלקת נרות',
+          channelDescription: 'תזכורת להדלקת נרות שבת',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
+  }
+
+  /// Cancel candle lighting reminder
+  static Future<void> cancelCandleLightingReminder() async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancel(_candleLightingId);
   }
 
   /// Cancel all notifications
