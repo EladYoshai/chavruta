@@ -33,3 +33,5 @@ macos/Pods/
 *.Zone.Identifier
 tools/add_summaries*.py
 .netlify/
+*.Zone.Identifier
+errors/
