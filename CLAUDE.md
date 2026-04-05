@@ -208,8 +208,36 @@ tools/
 - iOS builds need a Mac with Xcode (not available in current WSL setup) - use web version instead
 - Daf summary generation needs more dapim (run `generate_summaries.py` with Gemini API key)
 
+## Remaining TODO Features
+These features are planned but not yet implemented:
+
+### Practical Tools
+- **ברכון דיגיטלי** - Bracha decision tree ("What bracha on...?")
+- **מחשבון תאריכים** - Hebrew ↔ Gregorian date converter + yahrzeit calculator
+- **תזכורת ליארצייט** - Annual notification on Hebrew yahrzeit date
+- **סימניה** - Bookmarks to save place in any text
+- **שיתוף הישגים** - Share badges/streaks on WhatsApp
+
+### Women's Features (shown for נקבה in settings)
+- **הלכות נידה** - Discreet halacha reference (SA YD 183-200), for married women only
+- **הדלקת נרות** - Friday candle lighting reminder notification (18 min before shkia)
+- **תפילת חנה** - Women's prayers collection from Sefaria siddur
+- **הפרשת חלה** - Full nusach for hafrashat challah (available on Sefaria: `Siddur_Sefard,_Blessings,_Separating_Challah` / `Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Separating_Hallah`)
+
+### Gamification
+- **סיום מסכת** - Track progress toward finishing a masechet
+
+### Additional Learning
+- **חק לישראל** - Daily portions (Sefaria has as collections, not direct API)
+- **הלכה בהתאמה לעונה** - Seasonal halacha (e.g. הלכות פסח before Pesach)
+
+## GitHub
+- Repo: https://github.com/EladYoshai/chavruta
+- Auto-deploys to GitHub Pages on push to main
+- Live URL: https://eladyoshai.github.io/chavruta/
+
 ## Design
 - Colors: Gold (#D4A847), Deep Blue (#1A237E), Cream (#FFF8E7), Parchment (#F5E6C8)
-- Font: Google Fonts Rubik
+- Font: Google Fonts Rubik, 22px for Torah text, height 2.0
 - Full RTL layout
 - Material 3 design
