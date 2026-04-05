@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import '../app/app_state.dart';
 import '../services/notification_service.dart';
 import '../utils/constants.dart';
+import 'home_screen.dart' show omerHebrew;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -23,6 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   TimeOfDay _notificationTime = const TimeOfDay(hour: 8, minute: 0);
   List<int> _reminderDays = [0, 1, 2, 3, 4];
+  bool _omerReminderEnabled = false;
+  TimeOfDay _omerReminderTime = const TimeOfDay(hour: 20, minute: 0);
   double _meatDairyHours = 6;
 
   @override
@@ -42,6 +46,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       minute: int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0,
     );
     _reminderDays = List<int>.from(progress.reminderDays);
+    _omerReminderEnabled = progress.omerReminderEnabled;
+    final omerParts = progress.omerReminderTime.split(':');
+    _omerReminderTime = TimeOfDay(
+      hour: int.tryParse(omerParts[0]) ?? 20,
+      minute: int.tryParse(omerParts.length > 1 ? omerParts[1] : '0') ?? 0,
+    );
     _meatDairyHours = progress.meatDairyHours.toDouble();
   }
 
@@ -66,6 +76,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       notificationsEnabled: _notificationsEnabled,
       notificationTime: timeStr,
       reminderDays: _reminderDays,
+      omerReminderEnabled: _omerReminderEnabled,
+      omerReminderTime: '${_omerReminderTime.hour.toString().padLeft(2, '0')}:${_omerReminderTime.minute.toString().padLeft(2, '0')}',
       meatDairyHours: _meatDairyHours,
     );
 
@@ -79,6 +91,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         NotificationService.scheduleStreakWarning();
       } else {
         NotificationService.cancelAll();
+      }
+
+      // Omer reminder
+      if (_omerReminderEnabled) {
+        final omerDay = _getOmerDay();
+        if (omerDay > 0 && omerDay <= 49) {
+          NotificationService.scheduleOmerReminder(
+            hour: _omerReminderTime.hour,
+            minute: _omerReminderTime.minute,
+            omerText: _getOmerText(omerDay),
+          );
+        }
+      } else {
+        NotificationService.cancelOmerReminder();
       }
     }
 
@@ -382,6 +408,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
 
+              // Omer reminder
+              if (!kIsWeb) ...[
+                const SizedBox(height: 20),
+                _buildLabel('תזכורת לספירת העומר'),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'תזכורת ספירת העומר',
+                            style: GoogleFonts.rubik(
+                              fontSize: 16,
+                              color: AppColors.darkBrown,
+                            ),
+                          ),
+                          Switch(
+                            value: _omerReminderEnabled,
+                            activeTrackColor: AppColors.deepBlue,
+                            onChanged: (v) =>
+                                setState(() => _omerReminderEnabled = v),
+                          ),
+                        ],
+                      ),
+                      if (_omerReminderEnabled) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: _omerReminderTime,
+                              builder: (context, child) {
+                                return Directionality(
+                                  textDirection: TextDirection.rtl,
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() => _omerReminderTime = picked);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.parchment,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'שעת תזכורת',
+                                  style: GoogleFonts.rubik(
+                                    fontSize: 14,
+                                    color: AppColors.darkBrown,
+                                  ),
+                                ),
+                                Text(
+                                  '${_omerReminderTime.hour.toString().padLeft(2, '0')}:${_omerReminderTime.minute.toString().padLeft(2, '0')}',
+                                  style: GoogleFonts.rubik(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.deepBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Show today's omer count
+                        Builder(builder: (_) {
+                          final day = _getOmerDay();
+                          if (day > 0 && day <= 49) {
+                            return Text(
+                              'היום: ${_getOmerText(day)}',
+                              style: GoogleFonts.rubik(
+                                fontSize: 13,
+                                color: AppColors.darkGold,
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          }
+                          return Text(
+                            'ספירת העומר אינה פעילה כעת',
+                            style: GoogleFonts.rubik(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          );
+                        }),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
               // Meat/dairy timer
               const SizedBox(height: 20),
               _buildLabel('זמן בין בשר לחלב'),
@@ -644,6 +778,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  int _getOmerDay() {
+    final jewishCal = JewishCalendar.fromDateTime(DateTime.now());
+    final month = jewishCal.getJewishMonth();
+    final day = jewishCal.getJewishDayOfMonth();
+    if (month == 1 && day >= 16) return day - 15;
+    if (month == 2) return day + 15;
+    if (month == 3 && day <= 5) return day + 44;
+    return 0;
+  }
+
+  String _getOmerText(int day) {
+    if (day > 0 && day <= 49 && day < omerHebrew.length) {
+      return omerHebrew[day];
+    }
+    return '';
   }
 
   Widget _buildDayChip(int dayIndex, String label) {

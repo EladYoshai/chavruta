@@ -46,6 +46,8 @@ class AppState extends ChangeNotifier {
     bool? notificationsEnabled,
     String? notificationTime,
     List<int>? reminderDays,
+    bool? omerReminderEnabled,
+    String? omerReminderTime,
     double? meatDairyHours,
   }) async {
     _progress.userName = name;
@@ -64,6 +66,12 @@ class AppState extends ChangeNotifier {
     }
     if (reminderDays != null) {
       _progress.reminderDays = reminderDays;
+    }
+    if (omerReminderEnabled != null) {
+      _progress.omerReminderEnabled = omerReminderEnabled;
+    }
+    if (omerReminderTime != null) {
+      _progress.omerReminderTime = omerReminderTime;
     }
     if (meatDairyHours != null) {
       _progress.meatDairyHours = meatDairyHours;

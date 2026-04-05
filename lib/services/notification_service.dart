@@ -14,10 +14,12 @@ class NotificationService {
   static const String _dailyChannelId = 'daily_reminder';
   static const String _streakChannelId = 'streak_warning';
   static const String _milestoneChannelId = 'milestone';
+  static const String _omerChannelId = 'omer_reminder';
 
   // Notification IDs
   static const int _dailyReminderId = 1;
   static const int _streakWarningId = 2;
+  static const int _omerReminderId = 3;
   static const int _milestoneBaseId = 100;
 
   /// Initialize notification service
@@ -29,8 +31,44 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationAction,
+    );
     _initialized = true;
+  }
+
+  /// Handle notification action tap
+  static void _onNotificationAction(NotificationResponse response) {
+    final payload = response.payload ?? '';
+    if (payload == 'omer_snooze') {
+      // Snooze: reschedule in 1 hour
+      _snoozeOmer();
+    }
+    // 'omer_done' or tap = just dismiss (default)
+  }
+
+  /// Snooze omer reminder for 1 hour
+  static Future<void> _snoozeOmer() async {
+    if (kIsWeb || !_initialized) return;
+
+    final snoozeTime = DateTime.now().add(const Duration(hours: 1));
+    await _plugin.zonedSchedule(
+      _omerReminderId + 10, // different ID so it doesn't cancel the daily one
+      'חברותא - ספירת העומר (תזכורת)',
+      'לא לשכוח לספור ספירת העומר!',
+      tz.TZDateTime.from(snoozeTime, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _omerChannelId,
+          'ספירת העומר',
+          channelDescription: 'תזכורת יומית לספירת העומר',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
   }
 
   /// Schedule a daily learning reminder
@@ -141,6 +179,60 @@ class NotificationService {
         body: message,
       );
     }
+  }
+
+  /// Schedule daily omer reminder
+  static Future<void> scheduleOmerReminder({
+    int hour = 20,
+    int minute = 0,
+    required String omerText,
+  }) async {
+    if (kIsWeb || !_initialized) return;
+
+    await _plugin.cancel(_omerReminderId);
+
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      _omerReminderId,
+      'חברותא - ספירת העומר 🌾',
+      omerText,
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _omerChannelId,
+          'ספירת העומר',
+          channelDescription: 'תזכורת יומית לספירת העומר',
+          importance: Importance.high,
+          priority: Priority.high,
+          actions: <AndroidNotificationAction>[
+            const AndroidNotificationAction(
+              'omer_done',
+              'קראתי, תודה ✓',
+              cancelNotification: true,
+            ),
+            const AndroidNotificationAction(
+              'omer_snooze',
+              'תזכיר לי מאוחר יותר',
+              cancelNotification: true,
+            ),
+          ],
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'omer',
+    );
+  }
+
+  /// Cancel omer reminder
+  static Future<void> cancelOmerReminder() async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancel(_omerReminderId);
   }
 
   /// Cancel all notifications

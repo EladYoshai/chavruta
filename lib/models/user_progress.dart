@@ -30,6 +30,10 @@ class UserProgress {
   String notificationTime; // 'HH:mm' format
   List<int> reminderDays; // 0=Sun, 1=Mon, ..., 6=Sat (which days to remind)
 
+  // Omer reminder
+  bool omerReminderEnabled;
+  String omerReminderTime; // 'HH:mm' format
+
   // Meat/Dairy timer
   double meatDairyHours; // hours to wait (1, 3, 4, 5.5, 6)
   String? lastMeatTime; // ISO datetime when user last ate meat
@@ -63,6 +67,8 @@ class UserProgress {
     this.notificationsEnabled = true,
     this.notificationTime = '08:00',
     List<int>? reminderDays,
+    this.omerReminderEnabled = false,
+    this.omerReminderTime = '20:00',
     this.meatDairyHours = 6.0,
     this.lastMeatTime,
     List<String>? purchasedAvatars,
@@ -162,6 +168,8 @@ class UserProgress {
         'notificationsEnabled': notificationsEnabled,
         'notificationTime': notificationTime,
         'reminderDays': reminderDays,
+        'omerReminderEnabled': omerReminderEnabled,
+        'omerReminderTime': omerReminderTime,
         'meatDairyHours': meatDairyHours,
         'lastMeatTime': lastMeatTime,
         'purchasedAvatars': purchasedAvatars,
@@ -200,6 +208,8 @@ class UserProgress {
         reminderDays: json['reminderDays'] != null
             ? List<int>.from(json['reminderDays'])
             : null,
+        omerReminderEnabled: json['omerReminderEnabled'] ?? false,
+        omerReminderTime: json['omerReminderTime'] ?? '20:00',
         meatDairyHours: (json['meatDairyHours'] ?? 6).toDouble(),
         lastMeatTime: json['lastMeatTime'],
         purchasedAvatars: json['purchasedAvatars'] != null

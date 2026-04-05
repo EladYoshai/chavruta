@@ -36,7 +36,7 @@ const _hebrewDayNames = [
     'שבת קודש',
   ];
 
-const _omerHebrew = [
+const omerHebrew = [
     '', // 0
     'היום יום אחד לעומר',
     'היום שני ימים לעומר',
@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (month == 1 && day >= 16) omerDay = day - 15;
       if (month == 2) omerDay = day + 15;
       if (month == 3 && day <= 5) omerDay = day + 44;
-      final omer = (omerDay > 0 && omerDay <= 49) ? _omerHebrew[omerDay] : '';
+      final omer = (omerDay > 0 && omerDay <= 49) ? omerHebrew[omerDay] : '';
 
       if (mounted) {
         setState(() {
