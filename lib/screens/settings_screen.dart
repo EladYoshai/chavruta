@@ -306,7 +306,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Notification settings (mobile only)
               if (!kIsWeb) ...[
                 const SizedBox(height: 20),
-                _buildLabel('התראות'),
+                _buildLabel('תזכורת ללימוד יומי'),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(16),
