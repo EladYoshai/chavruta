@@ -30,6 +30,9 @@ class UserProgress {
   String notificationTime; // 'HH:mm' format
   List<int> reminderDays; // 0=Sun, 1=Mon, ..., 6=Sat (which days to remind)
 
+  // Marital status (for women - mikvah feature)
+  String maritalStatus; // '', 'single', 'married'
+
   // Omer reminder
   bool omerReminderEnabled;
   String omerReminderTime; // 'HH:mm' format
@@ -67,6 +70,7 @@ class UserProgress {
     this.notificationsEnabled = true,
     this.notificationTime = '08:00',
     List<int>? reminderDays,
+    this.maritalStatus = '',
     this.omerReminderEnabled = false,
     this.omerReminderTime = '20:00',
     this.meatDairyHours = 6.0,
@@ -132,6 +136,9 @@ class UserProgress {
     return isFemale ? '👩' : '🧔';
   }
 
+  /// Whether to show mikvah feature (married woman)
+  bool get showMikvah => isFemale && maritalStatus == 'married';
+
   /// Whether user is Sefardi (sefard or edot hamizrach)
   bool get isSefardi => nusach == 'sefard' || nusach == 'edot_hamizrach';
 
@@ -168,6 +175,7 @@ class UserProgress {
         'notificationsEnabled': notificationsEnabled,
         'notificationTime': notificationTime,
         'reminderDays': reminderDays,
+        'maritalStatus': maritalStatus,
         'omerReminderEnabled': omerReminderEnabled,
         'omerReminderTime': omerReminderTime,
         'meatDairyHours': meatDairyHours,
@@ -208,6 +216,7 @@ class UserProgress {
         reminderDays: json['reminderDays'] != null
             ? List<int>.from(json['reminderDays'])
             : null,
+        maritalStatus: json['maritalStatus'] ?? '',
         omerReminderEnabled: json['omerReminderEnabled'] ?? false,
         omerReminderTime: json['omerReminderTime'] ?? '20:00',
         meatDairyHours: (json['meatDairyHours'] ?? 6).toDouble(),

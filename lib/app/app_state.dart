@@ -42,6 +42,7 @@ class AppState extends ChangeNotifier {
     required int age,
     required String city,
     String? nusach,
+    String? maritalStatus,
     int? dailyGoalSections,
     bool? notificationsEnabled,
     String? notificationTime,
@@ -55,6 +56,7 @@ class AppState extends ChangeNotifier {
     _progress.age = age;
     _progress.city = city;
     if (nusach != null) _progress.nusach = nusach;
+    if (maritalStatus != null) _progress.maritalStatus = maritalStatus;
     if (dailyGoalSections != null) {
       _progress.dailyGoalSections = dailyGoalSections;
     }

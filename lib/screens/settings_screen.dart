@@ -27,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<int> _reminderDays = [0, 1, 2, 3, 4];
   bool _omerReminderEnabled = false;
   TimeOfDay _omerReminderTime = const TimeOfDay(hour: 20, minute: 0);
+  String _maritalStatus = '';
   double _meatDairyHours = 6;
 
   @override
@@ -52,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       hour: int.tryParse(omerParts[0]) ?? 20,
       minute: int.tryParse(omerParts.length > 1 ? omerParts[1] : '0') ?? 0,
     );
+    _maritalStatus = progress.maritalStatus;
     _meatDairyHours = progress.meatDairyHours.toDouble();
   }
 
@@ -72,6 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       age: int.tryParse(_ageController.text) ?? 0,
       city: _cityController.text.trim(),
       nusach: _selectedNusach,
+      maritalStatus: _maritalStatus,
       dailyGoalSections: _dailyGoal,
       notificationsEnabled: _notificationsEnabled,
       notificationTime: timeStr,
@@ -210,6 +213,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+
+              // Marital status (shown for women)
+              if (_selectedGender == 'נקבה') ...[
+                const SizedBox(height: 20),
+                _buildLabel('מצב משפחתי'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMaritalButton('single', 'רווקה'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildMaritalButton('married', 'נשואה'),
+                    ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: 20),
 
               // Nusach selection
@@ -771,6 +794,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label,
             style: GoogleFonts.rubik(
               fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.darkBrown,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaritalButton(String value, String label) {
+    final isSelected = _maritalStatus == value;
+    return GestureDetector(
+      onTap: () => setState(() => _maritalStatus = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6A1B9A) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6A1B9A)
+                : AppColors.gold.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.rubik(
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : AppColors.darkBrown,
             ),

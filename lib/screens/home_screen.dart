@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/app_state.dart';
 import '../models/study_section.dart';
 import '../models/user_progress.dart';
@@ -420,6 +421,54 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+                // Mikvah button (married women only)
+                if (progress.showMikvah)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: GestureDetector(
+                        onTap: () => _openMikvahMap(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                                const Color(0xFF8E24AA).withValues(alpha: 0.08),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF6A1B9A).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: Row(
+                              children: [
+                                const Text('🏊‍♀️', style: TextStyle(fontSize: 22)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'מקוואות בסביבה',
+                                    style: GoogleFonts.rubik(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.darkBrown,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.navigation,
+                                    color: Color(0xFF6A1B9A), size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Meat/dairy timer
                 SliverToBoxAdapter(
                   child: Padding(
@@ -585,6 +634,17 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  Future<void> _openMikvahMap() async {
+    // Try Google Maps first, then Waze, then browser
+    final googleMapsUrl = Uri.parse(
+        'https://www.google.com/maps/search/%D7%9E%D7%A7%D7%95%D7%95%D7%94/');
+    // "מקווה" URL-encoded
+
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildMeatDairyWidget(AppState appState, UserProgress progress) {

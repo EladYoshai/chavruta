@@ -32,6 +32,8 @@ dependencies:
   intl: ^0.20.2
   # Location for zmanim
   geolocator: ^13.0.0
+  # URL launcher for maps
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
