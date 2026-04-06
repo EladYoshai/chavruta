@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/app_state.dart';
 import '../services/analytics_service.dart';
+import '../services/web_notification_stub.dart' if (dart.library.js_interop) '../services/web_notification_service.dart';
 import '../models/study_section.dart';
 import '../models/user_progress.dart';
 import '../services/sefaria_service.dart';
@@ -106,6 +108,34 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadCalendarInfo();
     AnalyticsService.screenView('home');
+    if (kIsWeb) _checkWebNotifications();
+  }
+
+  void _checkWebNotifications() {
+    // Run after first frame so AppState is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final progress = context.read<AppState>().progress;
+      if (!progress.notificationsEnabled) return;
+
+      final hasStudied = progress.todayCompletedCount > 0;
+      final timeParts = progress.notificationTime.split(':');
+      final hour = int.tryParse(timeParts[0]) ?? 8;
+      final minute = int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0;
+
+      WebNotificationService.checkDailyReminder(
+        hour: hour,
+        minute: minute,
+        hasStudiedToday: hasStudied,
+      );
+      WebNotificationService.checkStreakWarning(
+        hasStudiedToday: hasStudied,
+        streakDays: progress.streakDays,
+      );
+      if (progress.isFemale && progress.candleLightingEnabled) {
+        WebNotificationService.checkCandleLighting();
+      }
+    });
   }
 
   Future<void> _loadCalendarInfo() async {
