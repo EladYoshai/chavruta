@@ -548,70 +548,321 @@ class _DayInfo {
 // Prayer list screen (for categories with sub-prayers)
 // ==========================================
 
-class _PrayerListScreen extends StatelessWidget {
+class _PrayerListScreen extends StatefulWidget {
   final PrayerCategory category;
   const _PrayerListScreen({required this.category});
+
+  @override
+  State<_PrayerListScreen> createState() => _PrayerListScreenState();
+}
+
+class _PrayerListScreenState extends State<_PrayerListScreen> {
+  final SefariaService _sefaria = SefariaService();
+  final ScrollController _scrollController = ScrollController();
+  final ScrollController _tabScrollController = ScrollController();
+
+  // Each prayer's loaded text
+  List<List<String>> _prayerTexts = [];
+  List<GlobalKey> _sectionKeys = [];
+  int _activeIndex = 0;
+  bool _isLoading = true;
+  bool _programmaticScroll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sectionKeys = List.generate(widget.category.items.length, (_) => GlobalKey());
+    _scrollController.addListener(_onScroll);
+    _loadAll();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _tabScrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAll() async {
+    final texts = <List<String>>[];
+    for (final prayer in widget.category.items) {
+      try {
+        final data = await _sefaria.getText(prayer.ref);
+        List<String> segments = [];
+        if (data.containsKey('error') && data['error'].toString().contains('complex')) {
+          segments = await _fetchComplex(prayer.ref);
+        } else {
+          final versions = data['versions'] as List?;
+          if (versions != null) {
+            for (final version in versions) {
+              if (version['actualLanguage'] == 'he' && version['text'] != null) {
+                final text = version['text'];
+                if (text is List) {
+                  segments = _flatten(text);
+                } else if (text is String) {
+                  segments = [text];
+                }
+                break;
+              }
+            }
+          }
+        }
+        texts.add(segments);
+      } catch (_) {
+        texts.add([]);
+      }
+    }
+
+    if (mounted) setState(() { _prayerTexts = texts; _isLoading = false; });
+  }
+
+  Future<List<String>> _fetchComplex(String ref) async {
+    final parts = [
+      'Patriarchs', 'Divine_Might', 'Holiness_of_God', 'Knowledge',
+      'Repentance', 'Forgiveness', 'Redemption', 'Healing', 'Prosperity',
+      'Gathering_the_Exiles', 'Justice', 'Against_Enemies', 'The_Righteous',
+      'Rebuilding_Jerusalem', 'Kingdom_of_David', 'Response_to_Prayer',
+      'Temple_Service', 'Thanksgiving', 'Peace', 'Concluding_Passage',
+      'Sanctity_of_the_Day', 'Birkat_Kohanim', 'Kedushah',
+    ];
+    final result = <String>[];
+    for (final part in parts) {
+      try {
+        final data = await _sefaria.getText('$ref,_$part');
+        if (!data.containsKey('error')) {
+          final versions = data['versions'] as List?;
+          if (versions != null) {
+            for (final version in versions) {
+              if (version['actualLanguage'] == 'he' && version['text'] != null) {
+                final text = version['text'];
+                if (text is List) {
+                  result.addAll(_flatten(text));
+                } else if (text is String && text.isNotEmpty) {
+                  result.add(text);
+                }
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  List<String> _flatten(List<dynamic> list) {
+    final result = <String>[];
+    for (final item in list) {
+      if (item is String && item.isNotEmpty) result.add(item);
+      if (item is List) result.addAll(_flatten(item));
+    }
+    return result;
+  }
+
+  void _onScroll() {
+    if (_programmaticScroll) return;
+    // Find which section is currently visible
+    for (int i = _sectionKeys.length - 1; i >= 0; i--) {
+      final key = _sectionKeys[i];
+      final ctx = key.currentContext;
+      if (ctx != null) {
+        final box = ctx.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final pos = box.localToGlobal(Offset.zero);
+          if (pos.dy <= 150) { // Header area height
+            if (_activeIndex != i) {
+              setState(() => _activeIndex = i);
+              _scrollTabToIndex(i);
+            }
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  void _scrollTabToIndex(int index) {
+    // Approximate: each tab ~100px wide
+    final offset = (index * 110.0 - 50).clamp(0.0, _tabScrollController.position.maxScrollExtent);
+    _tabScrollController.animateTo(offset,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
+
+  void _scrollToSection(int index) async {
+    final key = _sectionKeys[index];
+    final ctx = key.currentContext;
+    if (ctx != null) {
+      _programmaticScroll = true;
+      setState(() => _activeIndex = index);
+      await Scrollable.ensureVisible(ctx,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.explicit);
+      _programmaticScroll = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(category.name),
+        title: Text(widget.category.name),
         backgroundColor: const Color(0xFF1B5E20),
         leading: IconButton(
           icon: const Icon(Icons.arrow_forward),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: category.items.length,
-          itemBuilder: (context, index) {
-            final prayer = category.items[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => _SiddurTextScreen(
-                      title: prayer.name,
-                      ref: prayer.ref,
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF1B5E20)),
+                  SizedBox(height: 16),
+                  Text('...טוען תפילות'),
+                ],
+              ),
+            )
+          : Directionality(
+              textDirection: TextDirection.rtl,
+              child: Column(
+                children: [
+                  // Top slider - prayer titles
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B5E20).withValues(alpha: 0.05),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: const Color(0xFF1B5E20).withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ),
+                    child: ListView.builder(
+                      controller: _tabScrollController,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      itemCount: widget.category.items.length,
+                      itemBuilder: (context, index) {
+                        final isActive = index == _activeIndex;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                          child: GestureDetector(
+                            onTap: () => _scrollToSection(index),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? const Color(0xFF1B5E20)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFF1B5E20).withValues(
+                                      alpha: isActive ? 1 : 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                widget.category.items[index].name,
+                                style: GoogleFonts.rubik(
+                                  fontSize: 13,
+                                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                  color: isActive ? Colors.white : const Color(0xFF1B5E20),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF1B5E20).withValues(alpha: 0.15)),
+                  // Continuous prayer text
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: widget.category.items.length,
+                      itemBuilder: (context, index) {
+                        final prayer = widget.category.items[index];
+                        final texts = index < _prayerTexts.length
+                            ? _prayerTexts[index]
+                            : <String>[];
+
+                        return Container(
+                          key: _sectionKeys[index],
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Section title
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFF1B5E20).withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  prayer.name,
+                                  style: GoogleFonts.rubik(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF1B5E20),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              // Prayer text
+                              if (texts.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text('לא ניתן לטעון',
+                                      style: GoogleFonts.rubik(
+                                          color: Colors.grey, fontSize: 14)),
+                                )
+                              else
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFFDF5),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.gold.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: texts.map((s) {
+                                      final clean = TorahTextViewer.stripHtml(s);
+                                      if (clean.isEmpty) return const SizedBox.shrink();
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: Text(
+                                          clean,
+                                          style: const TextStyle(
+                                            fontFamily: 'serif',
+                                            fontSize: 26,
+                                            height: 2.0,
+                                            color: Color(0xFF2C1810),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.menu_book,
-                          color: Color(0xFF1B5E20), size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(prayer.name,
-                            style: GoogleFonts.rubik(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.darkBrown)),
-                      ),
-                      const Icon(Icons.arrow_back_ios,
-                          size: 14, color: Color(0xFF1B5E20)),
-                    ],
-                  ),
-                ),
+                ],
               ),
-            );
-          },
-        ),
-      ),
+            ),
     );
   }
 }
