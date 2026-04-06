@@ -138,7 +138,73 @@ class _SiddurScreenState extends State<SiddurScreen> {
                       'ברכת הלבנה', _getKiddushLevanaRef(nusach)),
                   _buildSimpleCard(context, '🚗', 'תפילת הדרך',
                       'לפני נסיעה', _getTefilatHaderechRef(nusach)),
+
+                  const SizedBox(height: 16),
+                  _buildSectionHeader('אירועים'),
+                  _buildSimpleCard(context, '👶', 'ברית יצחק',
+                      'סדר ברית מילה', _getBritMilaRef(nusach)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const _ChanukatHabayitScreen())),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF1B5E20).withValues(alpha: 0.15)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🏠', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('חנוכת הבית', style: GoogleFonts.rubik(fontSize: 17, fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
+                                Text('נוסח לחנוכת בית חדש', style: GoogleFonts.rubik(fontSize: 12, color: Colors.grey.shade600)),
+                              ],
+                            )),
+                            const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  _buildSectionHeader('לעילוי נשמה'),
                   _buildAzkaraCard(context),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const _MishnayotAzkaraScreen())),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF1B5E20).withValues(alpha: 0.15)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('📚', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('משניות לעילוי נשמה', style: GoogleFonts.rubik(fontSize: 17, fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
+                                Text('משניות לפי אותיות שם הנפטר/ת', style: GoogleFonts.rubik(fontSize: 12, color: Colors.grey.shade600)),
+                              ],
+                            )),
+                            const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 30),
                 ],
@@ -454,6 +520,11 @@ class _SiddurScreenState extends State<SiddurScreen> {
     'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar',
     'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Preparatory_Prayers,_Morning_Blessings',
     _ => 'Siddur_Sefard,_Weekday_Shacharit,_Asher_Yatzar',
+  };
+
+  String _getBritMilaRef(String nusach) => switch (nusach) {
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Brit_Mila',
+    _ => 'Siddur_Sefard,_Various_Blessings,_Circumcision',
   };
 
   String _getTefilatHaderechRef(String nusach) => switch (nusach) {
@@ -929,6 +1000,363 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                                         color: Color(0xFF2C1810),
                                       ),
                                     ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// חנוכת הבית - hardcoded nusach
+// ==========================================
+
+class _ChanukatHabayitScreen extends StatelessWidget {
+  const _ChanukatHabayitScreen();
+
+  static const _text = [
+    'סדר חנוכת הבית',
+    '',
+    'קובעים מזוזה בפתח ומברכים:',
+    'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו, וְצִוָּנוּ לִקְבֹּעַ מְזוּזָה.',
+    '',
+    'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, שֶׁהֶחֱיָנוּ וְקִיְּמָנוּ וְהִגִּיעָנוּ לַזְּמַן הַזֶּה.',
+    '',
+    'מזמור שיר חנוכת הבית לדוד (תהילים ל):',
+    '',
+    'אֲרוֹמִמְךָ ה\' כִּי דִלִּיתָנִי, וְלֹא שִׂמַּחְתָּ אֹיְבַי לִי.',
+    'ה\' אֱלֹקָי, שִׁוַּעְתִּי אֵלֶיךָ וַתִּרְפָּאֵנִי.',
+    'ה\', הֶעֱלִיתָ מִן שְׁאוֹל נַפְשִׁי, חִיִּיתַנִי מִיָּרְדִי בוֹר.',
+    'זַמְּרוּ לַה\' חֲסִידָיו, וְהוֹדוּ לְזֵכֶר קָדְשׁוֹ.',
+    'כִּי רֶגַע בְּאַפּוֹ, חַיִּים בִּרְצוֹנוֹ, בָּעֶרֶב יָלִין בֶּכִי, וְלַבֹּקֶר רִנָּה.',
+    'וַאֲנִי אָמַרְתִּי בְשַׁלְוִי, בַּל אֶמּוֹט לְעוֹלָם.',
+    'ה\', בִּרְצוֹנְךָ הֶעֱמַדְתָּה לְהַרְרִי עֹז, הִסְתַּרְתָּ פָנֶיךָ הָיִיתִי נִבְהָל.',
+    'אֵלֶיךָ ה\' אֶקְרָא, וְאֶל אֲדֹנָי אֶתְחַנָּן.',
+    'מַה בֶּצַע בְּדָמִי בְּרִדְתִּי אֶל שָׁחַת, הֲיוֹדְךָ עָפָר הֲיַגִּיד אֲמִתֶּךָ.',
+    'שְׁמַע ה\' וְחָנֵּנִי, ה\' הֱיֵה עֹזֵר לִי.',
+    'הָפַכְתָּ מִסְפְּדִי לְמָחוֹל לִי, פִּתַּחְתָּ שַׂקִּי וַתְּאַזְּרֵנִי שִׂמְחָה.',
+    'לְמַעַן יְזַמֶּרְךָ כָבוֹד וְלֹא יִדֹּם, ה\' אֱלֹקַי לְעוֹלָם אוֹדֶךָּ.',
+    '',
+    'יהי רצון מלפניך ה\' אלוקינו ואלוקי אבותינו, שתשרה שכינתך בבית הזה, ותשלח ברכה והצלחה בכל מעשה ידינו. ויקוים בנו מקרא שכתוב: "וידעת כי שלום אהלך, ופקדת נוך ולא תחטא". ותן לנו ולכל יושבי ביתנו חיים טובים ושלום, ותשמרנו מכל צרה ויגון, ותמלא ביתנו אורה ושמחה. אמן כן יהי רצון.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('חנוכת הבית'),
+        backgroundColor: const Color(0xFF1B5E20),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFDF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _text.map((line) {
+                  if (line.isEmpty) return const SizedBox(height: 12);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 26,
+                        height: 2.0,
+                        color: Color(0xFF2C1810),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// משניות לעילוי נשמה - by letters of name
+// ==========================================
+
+class _MishnayotAzkaraScreen extends StatefulWidget {
+  const _MishnayotAzkaraScreen();
+
+  @override
+  State<_MishnayotAzkaraScreen> createState() => _MishnayotAzkaraScreenState();
+}
+
+class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
+  final _nameController = TextEditingController();
+  final SefariaService _sefaria = SefariaService();
+  List<String> _loadedText = [];
+  List<String> _selectedMasechetot = [];
+  bool _isLoading = false;
+  String _displayName = '';
+
+  // Map Hebrew letters to Mishnah masechetot that start with that letter
+  static const _letterToMasechet = {
+    'א': ['Mishnah_Avot', 'Mishnah_Eduyot'],
+    'ב': ['Mishnah_Berakhot', 'Mishnah_Bikkurim', 'Mishnah_Bava_Kamma'],
+    'ג': ['Mishnah_Gittin'],
+    'ד': ['Mishnah_Demai'],
+    'ה': ['Mishnah_Horayot'],
+    'ו': [],
+    'ז': ['Mishnah_Zevachim'],
+    'ח': ['Mishnah_Chullin', 'Mishnah_Chagigah'],
+    'ט': ['Mishnah_Tevul_Yom', 'Mishnah_Tahorot'],
+    'י': ['Mishnah_Yevamot', 'Mishnah_Yoma'],
+    'כ': ['Mishnah_Ketubot', 'Mishnah_Kelim', 'Mishnah_Keritot'],
+    'ך': ['Mishnah_Ketubot'],
+    'ל': [],
+    'מ': ['Mishnah_Megillah', 'Mishnah_Makkot', 'Mishnah_Menachot', 'Mishnah_Mikvaot'],
+    'ם': ['Mishnah_Megillah'],
+    'נ': ['Mishnah_Nazir', 'Mishnah_Nedarim', 'Mishnah_Niddah', 'Mishnah_Negaim'],
+    'ן': ['Mishnah_Nazir'],
+    'ס': ['Mishnah_Sanhedrin', 'Mishnah_Sukkah', 'Mishnah_Sotah'],
+    'ע': ['Mishnah_Avodah_Zarah', 'Mishnah_Arakhin', 'Mishnah_Eruvin', 'Mishnah_Orlah'],
+    'פ': ['Mishnah_Pesachim', 'Mishnah_Peah', 'Mishnah_Parah'],
+    'ף': ['Mishnah_Pesachim'],
+    'צ': [],
+    'ק': ['Mishnah_Kiddushin'],
+    'ר': ['Mishnah_Rosh_Hashanah'],
+    'ש': ['Mishnah_Shabbat', 'Mishnah_Sheviit', 'Mishnah_Shekalim', 'Mishnah_Shevuot'],
+    'ת': ['Mishnah_Tamid', 'Mishnah_Terumot', 'Mishnah_Taanit'],
+  };
+
+  // Hebrew display names
+  static const _masechetNames = {
+    'Mishnah_Avot': 'אבות',
+    'Mishnah_Eduyot': 'עדויות',
+    'Mishnah_Berakhot': 'ברכות',
+    'Mishnah_Bikkurim': 'ביכורים',
+    'Mishnah_Bava_Kamma': 'בבא קמא',
+    'Mishnah_Gittin': 'גיטין',
+    'Mishnah_Demai': 'דמאי',
+    'Mishnah_Horayot': 'הוריות',
+    'Mishnah_Zevachim': 'זבחים',
+    'Mishnah_Chullin': 'חולין',
+    'Mishnah_Chagigah': 'חגיגה',
+    'Mishnah_Tevul_Yom': 'טבול יום',
+    'Mishnah_Tahorot': 'טהרות',
+    'Mishnah_Yevamot': 'יבמות',
+    'Mishnah_Yoma': 'יומא',
+    'Mishnah_Ketubot': 'כתובות',
+    'Mishnah_Kelim': 'כלים',
+    'Mishnah_Keritot': 'כריתות',
+    'Mishnah_Megillah': 'מגילה',
+    'Mishnah_Makkot': 'מכות',
+    'Mishnah_Menachot': 'מנחות',
+    'Mishnah_Mikvaot': 'מקוואות',
+    'Mishnah_Nazir': 'נזיר',
+    'Mishnah_Nedarim': 'נדרים',
+    'Mishnah_Niddah': 'נידה',
+    'Mishnah_Negaim': 'נגעים',
+    'Mishnah_Sanhedrin': 'סנהדרין',
+    'Mishnah_Sukkah': 'סוכה',
+    'Mishnah_Sotah': 'סוטה',
+    'Mishnah_Avodah_Zarah': 'עבודה זרה',
+    'Mishnah_Arakhin': 'ערכין',
+    'Mishnah_Eruvin': 'עירובין',
+    'Mishnah_Orlah': 'ערלה',
+    'Mishnah_Pesachim': 'פסחים',
+    'Mishnah_Peah': 'פאה',
+    'Mishnah_Parah': 'פרה',
+    'Mishnah_Kiddushin': 'קידושין',
+    'Mishnah_Rosh_Hashanah': 'ראש השנה',
+    'Mishnah_Shabbat': 'שבת',
+    'Mishnah_Sheviit': 'שביעית',
+    'Mishnah_Shekalim': 'שקלים',
+    'Mishnah_Shevuot': 'שבועות',
+    'Mishnah_Tamid': 'תמיד',
+    'Mishnah_Terumot': 'תרומות',
+    'Mishnah_Taanit': 'תענית',
+  };
+
+  void _calculate() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    // Get first masechet per letter (name + נשמה)
+    final allChars = '$name נשמה'.split('').where((c) => c.trim().isNotEmpty);
+    final masechetot = <String>{};
+    for (final char in allChars) {
+      final normalized = switch (char) {
+        'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
+        _ => char,
+      };
+      final list = _letterToMasechet[normalized];
+      if (list != null && list.isNotEmpty) {
+        masechetot.add(list.first); // First masechet for that letter
+      }
+    }
+
+    setState(() {
+      _selectedMasechetot = masechetot.toList();
+      _displayName = name;
+    });
+    _loadMasechetot();
+  }
+
+  Future<void> _loadMasechetot() async {
+    setState(() { _isLoading = true; _loadedText = []; });
+
+    final texts = <String>[];
+    for (final ref in _selectedMasechetot) {
+      final heName = _masechetNames[ref] ?? ref;
+      texts.add('--- משנה $heName פרק א ---');
+      try {
+        final data = await _sefaria.getText('$ref.1');
+        final versions = data['versions'] as List?;
+        if (versions != null) {
+          for (final version in versions) {
+            if (version['actualLanguage'] == 'he' && version['text'] != null) {
+              final text = version['text'];
+              if (text is List) {
+                for (final item in text) {
+                  if (item is String && item.isNotEmpty) texts.add(item);
+                  if (item is List) {
+                    for (final sub in item) {
+                      if (sub is String && sub.isNotEmpty) texts.add(sub);
+                    }
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
+  }
+
+  @override
+  void dispose() { _nameController.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('משניות לעילוי נשמה'),
+        backgroundColor: const Color(0xFF1B5E20),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('שם הנפטר/ת',
+                      style: GoogleFonts.rubik(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          textDirection: TextDirection.rtl,
+                          style: GoogleFonts.rubik(fontSize: 18),
+                          decoration: InputDecoration(
+                            hintText: 'הכנס שם בעברית',
+                            hintStyle: GoogleFonts.rubik(color: Colors.grey.shade400),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: _calculate,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1B5E20),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('חפש', style: GoogleFonts.rubik(fontSize: 16)),
+                      ),
+                    ],
+                  ),
+                  if (_selectedMasechetot.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('משניות לעילוי נשמת $_displayName:',
+                        style: GoogleFonts.rubik(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF1B5E20))),
+                    Text(
+                      _selectedMasechetot.map((r) => _masechetNames[r] ?? r).join(', '),
+                      style: GoogleFonts.rubik(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
+                  : _loadedText.isEmpty
+                      ? Center(child: Text('הכנס את שם הנפטר/ת לקבלת משניות',
+                          style: GoogleFonts.rubik(fontSize: 14, color: Colors.grey)))
+                      : ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFDF5),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _loadedText.map((segment) {
+                                  if (segment.startsWith('---')) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 16, bottom: 8),
+                                      child: Text(
+                                        segment.replaceAll('---', '').trim(),
+                                        style: GoogleFonts.rubik(
+                                          fontSize: 18, fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF1B5E20)),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  }
+                                  final clean = TorahTextViewer.stripHtml(segment);
+                                  if (clean.isEmpty) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Text(clean,
+                                        style: const TextStyle(
+                                          fontFamily: 'serif', fontSize: 24,
+                                          height: 2.0, color: Color(0xFF2C1810))),
                                   );
                                 }).toList(),
                               ),
