@@ -141,8 +141,10 @@ class _SiddurScreenState extends State<SiddurScreen> {
 
                   const SizedBox(height: 16),
                   _buildSectionHeader('אירועים'),
-                  _buildSimpleCard(context, '👶', 'ברית יצחק',
+                  _buildSimpleCard(context, '👶', 'ברית מילה',
                       'סדר ברית מילה', _getBritMilaRef(nusach)),
+                  _buildSimpleCard(context, '💍', 'שבע ברכות',
+                      'שבע ברכות לחתן וכלה', _getShevaBrachotRef(nusach)),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: GestureDetector(
@@ -516,6 +518,11 @@ class _SiddurScreenState extends State<SiddurScreen> {
     'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar',
     'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Preparatory_Prayers,_Morning_Blessings',
     _ => 'Siddur_Sefard,_Weekday_Shacharit,_Asher_Yatzar',
+  };
+
+  String _getShevaBrachotRef(String nusach) => switch (nusach) {
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Sheva_Berachot',
+    _ => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Sheva_Berachot', // fallback
   };
 
   String _getBritMilaRef(String nusach) => switch (nusach) {
@@ -1205,20 +1212,13 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
   bool _isLoading = false;
   String _displayName = '';
 
-  // Gematria-based: letter value = Tehillim chapter number
-  // For values > 150: subtract 150 (ר=200→50, ש=300→150, ת=400→100)
-  static const _letterToChapter = {
-    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
-    'ט': 9, 'י': 10, 'כ': 20, 'ך': 20, 'ל': 30, 'מ': 40, 'ם': 40,
-    'נ': 50, 'ן': 50, 'ס': 60, 'ע': 70, 'פ': 80, 'ף': 80,
-    'צ': 90, 'ץ': 90, 'ק': 100, 'ר': 50, 'ש': 150, 'ת': 100,
-  };
-
-  // Hebrew chapter names (standard notation with geresh)
-  static const _chapterHebrew = {
-    1: "א'", 2: "ב'", 3: "ג'", 4: "ד'", 5: "ה'", 6: "ו'", 7: "ז'", 8: "ח'",
-    9: "ט'", 10: "י'", 20: "כ'", 30: "ל'", 40: "מ'", 50: "נ'", 60: "ס'",
-    70: "ע'", 80: "פ'", 90: "צ'", 100: "ק'", 150: "ק\"נ",
+  // Tehillim 119: 22 sections of 8 verses, one per Hebrew letter
+  // Letter → start verse in Psalms 119
+  static const _letterToVerseStart = {
+    'א': 1, 'ב': 9, 'ג': 17, 'ד': 25, 'ה': 33, 'ו': 41, 'ז': 49, 'ח': 57,
+    'ט': 65, 'י': 73, 'כ': 81, 'ך': 81, 'ל': 89, 'מ': 97, 'ם': 97,
+    'נ': 105, 'ן': 105, 'ס': 113, 'ע': 121, 'פ': 129, 'ף': 129,
+    'צ': 137, 'ץ': 137, 'ק': 145, 'ר': 153, 'ש': 161, 'ת': 169,
   };
 
   List<String> _nameLetters = [];
@@ -1237,7 +1237,7 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     final nameLetters = <String>[];
     for (final char in name.split('')) {
       final n = _normalize(char);
-      if (_letterToChapter.containsKey(n) && !nameLetters.contains(n)) {
+      if (_letterToVerseStart.containsKey(n) && !nameLetters.contains(n)) {
         nameLetters.add(n);
       }
     }
@@ -1245,7 +1245,7 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     final neshmaLetters = <String>[];
     for (final char in 'נשמה'.split('')) {
       final n = _normalize(char);
-      if (_letterToChapter.containsKey(n) && !neshmaLetters.contains(n)) {
+      if (_letterToVerseStart.containsKey(n) && !neshmaLetters.contains(n)) {
         neshmaLetters.add(n);
       }
     }
@@ -1264,28 +1264,26 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
 
     final texts = <String>[];
 
-    // Name letters - full Tehillim chapters by gematria
-    texts.add('--- תהילים לאותיות שם $_displayName ---');
+    texts.add('--- תהילים קי"ט - אותיות שם $_displayName ---');
     for (final letter in _nameOnlyLetters) {
-      await _loadChapter(texts, letter);
+      await _loadLetterSection(texts, letter);
     }
 
-    // נשמה letters - always separate
-    texts.add('--- תהילים לאותיות נשמה ---');
+    texts.add('--- תהילים קי"ט - אותיות נשמה ---');
     for (final letter in _neshmaLetters) {
-      await _loadChapter(texts, letter);
+      await _loadLetterSection(texts, letter);
     }
 
     if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
-  Future<void> _loadChapter(List<String> texts, String letter) async {
-    final chapter = _letterToChapter[letter];
-    if (chapter == null) return;
-    final chHe = _chapterHebrew[chapter] ?? '$chapter';
-    texts.add('--- אות $letter - פרק $chHe ---');
+  Future<void> _loadLetterSection(List<String> texts, String letter) async {
+    final startVerse = _letterToVerseStart[letter];
+    if (startVerse == null) return;
+    final endVerse = startVerse + 7;
+    texts.add('--- אות $letter ---');
     try {
-      final data = await _sefaria.getText('Psalms.$chapter');
+      final data = await _sefaria.getText('Psalms.119.$startVerse-$endVerse');
       final versions = data['versions'] as List?;
       if (versions != null) {
         for (final version in versions) {
@@ -1369,15 +1367,15 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                   ),
                   if (_nameLetters.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text('תהילים לעילוי נשמת $_displayName:',
+                    Text('תהילים קי"ט לעילוי נשמת $_displayName:',
                         style: GoogleFonts.rubik(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1B5E20))),
-                    Text('אותיות השם: ${_nameOnlyLetters.map((l) => '$l (פרק ${_chapterHebrew[_letterToChapter[l]] ?? _letterToChapter[l]})').join(", ")}',
+                    Text('אותיות השם: ${_nameOnlyLetters.join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
-                    Text('אותיות נשמה: ${_neshmaLetters.map((l) => '$l (פרק ${_chapterHebrew[_letterToChapter[l]] ?? _letterToChapter[l]})').join(", ")}',
+                    Text('אותיות נשמה: ${_neshmaLetters.join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
