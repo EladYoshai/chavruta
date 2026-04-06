@@ -397,51 +397,68 @@ class _StudyScreenState extends State<StudyScreen> {
     ];
   }
 
-  // Peninei Halacha volumes with chapter counts
-  static const _penineiVolumes = [
-    {'ref': 'Peninei_Halakhah,_Berakhot', 'name': 'ברכות', 'chapters': 17},
-    {'ref': 'Peninei_Halakhah,_Prayer', 'name': 'תפילה', 'chapters': 27},
-    {'ref': 'Peninei_Halakhah,_Shabbat', 'name': 'שבת', 'chapters': 30},
-    {'ref': 'Peninei_Halakhah,_Pesach', 'name': 'פסח', 'chapters': 16},
-    {'ref': 'Peninei_Halakhah,_Kashrut', 'name': 'כשרות', 'chapters': 37},
-    {'ref': 'Peninei_Halakhah,_Festivals', 'name': 'מועדים', 'chapters': 13},
-    {'ref': 'Peninei_Halakhah,_Zemanim', 'name': 'זמנים', 'chapters': 15},
-    {'ref': 'Peninei_Halakhah,_Sukkot', 'name': 'סוכות', 'chapters': 8},
-    {'ref': 'Peninei_Halakhah,_Family', 'name': 'משפחה', 'chapters': 10},
-    {'ref': 'Peninei_Halakhah,_Women%27s_Prayer', 'name': 'תפילת נשים', 'chapters': 24},
+  // Peninei Halacha: volumes with [chapter, sections_per_chapter] pairs
+  // Each section is one daily lesson (~5-8 paragraphs)
+  static const _penineiSections = [
+    {'ref': 'Peninei_Halakhah,_Berakhot', 'name': 'ברכות', 'chapters': 17, 'spc': 8},
+    {'ref': 'Peninei_Halakhah,_Prayer', 'name': 'תפילה', 'chapters': 27, 'spc': 7},
+    {'ref': 'Peninei_Halakhah,_Shabbat', 'name': 'שבת', 'chapters': 30, 'spc': 8},
+    {'ref': 'Peninei_Halakhah,_Pesach', 'name': 'פסח', 'chapters': 16, 'spc': 7},
+    {'ref': 'Peninei_Halakhah,_Kashrut', 'name': 'כשרות', 'chapters': 37, 'spc': 6},
+    {'ref': 'Peninei_Halakhah,_Festivals', 'name': 'מועדים', 'chapters': 13, 'spc': 7},
+    {'ref': 'Peninei_Halakhah,_Zemanim', 'name': 'זמנים', 'chapters': 15, 'spc': 7},
+    {'ref': 'Peninei_Halakhah,_Sukkot', 'name': 'סוכות', 'chapters': 8, 'spc': 7},
+    {'ref': 'Peninei_Halakhah,_Family', 'name': 'משפחה', 'chapters': 10, 'spc': 8},
+    {'ref': 'Peninei_Halakhah,_Women%27s_Prayer', 'name': 'תפילת נשים', 'chapters': 24, 'spc': 6},
   ];
 
   Future<void> _loadPenineiHalacha() async {
-    // Cycle through volumes and chapters based on day of year
+    // Cycle through individual sections (chapter.section) based on day of year
     final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
 
-    // Calculate total chapters across all volumes
-    int totalChapters = 0;
-    for (final v in _penineiVolumes) {
-      totalChapters += v['chapters'] as int;
+    // Build flat list of all sections across all volumes
+    int totalSections = 0;
+    for (final v in _penineiSections) {
+      totalSections += (v['chapters'] as int) * (v['spc'] as int);
     }
 
-    final dayIndex = dayOfYear % totalChapters;
+    final dayIndex = dayOfYear % totalSections;
     int cumulative = 0;
-    String volumeRef = _penineiVolumes[0]['ref'] as String;
-    String volumeName = _penineiVolumes[0]['name'] as String;
+    String volumeRef = _penineiSections[0]['ref'] as String;
+    String volumeName = _penineiSections[0]['name'] as String;
     int chapter = 1;
+    int section = 1;
 
-    for (final v in _penineiVolumes) {
+    for (final v in _penineiSections) {
       final chapters = v['chapters'] as int;
-      if (cumulative + chapters > dayIndex) {
+      final spc = v['spc'] as int;
+      final volTotal = chapters * spc;
+      if (cumulative + volTotal > dayIndex) {
         volumeRef = v['ref'] as String;
         volumeName = v['name'] as String;
-        chapter = dayIndex - cumulative + 1;
+        final withinVol = dayIndex - cumulative;
+        chapter = (withinVol ~/ spc) + 1;
+        section = (withinVol % spc) + 1;
         break;
       }
-      cumulative += chapters;
+      cumulative += volTotal;
     }
 
-    final ref = '$volumeRef.$chapter';
+    // Fetch the specific section (chapter.section)
+    final ref = '$volumeRef.$chapter.$section';
     final data = await _sefaria.getText(ref);
-    _hebrewRef = data['heRef']?.toString() ?? 'פניני הלכה - $volumeName פרק $chapter';
-    final text = _extractHebrewText(data);
+
+    // If section doesn't exist, fall back to chapter.1
+    List<String> text;
+    if (data.containsKey('error')) {
+      final fallbackRef = '$volumeRef.$chapter.1';
+      final fallbackData = await _sefaria.getText(fallbackRef);
+      _hebrewRef = fallbackData['heRef']?.toString() ?? 'פניני הלכה - $volumeName';
+      text = _extractHebrewText(fallbackData);
+    } else {
+      _hebrewRef = data['heRef']?.toString() ?? 'פניני הלכה - $volumeName';
+      text = _extractHebrewText(data);
+    }
 
     _blocks = [
       TextBlock(
