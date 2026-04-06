@@ -727,52 +727,63 @@ class _AzkaraScreen extends StatefulWidget {
 class _AzkaraScreenState extends State<_AzkaraScreen> {
   final _nameController = TextEditingController();
   final SefariaService _sefaria = SefariaService();
-  List<int> _chapters = [];
   List<String> _loadedText = [];
   bool _isLoading = false;
   String _displayName = '';
 
-  static const _letterToChapter = {
-    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
-    'ט': 9, 'י': 10, 'כ': 20, 'ך': 20, 'ל': 30, 'מ': 40, 'ם': 40,
-    'נ': 50, 'ן': 50, 'ס': 60, 'ע': 70, 'פ': 80, 'ף': 80,
-    'צ': 90, 'ץ': 90, 'ק': 100, 'ר': 119, 'ש': 121, 'ת': 122,
+  // Tehillim 119: 22 sections of 8 verses, one per letter
+  // Letter -> start verse in Psalms 119
+  static const _letterToVerseStart = {
+    'א': 1, 'ב': 9, 'ג': 17, 'ד': 25, 'ה': 33, 'ו': 41, 'ז': 49, 'ח': 57,
+    'ט': 65, 'י': 73, 'כ': 81, 'ך': 81, 'ל': 89, 'מ': 97, 'ם': 97,
+    'נ': 105, 'ן': 105, 'ס': 113, 'ע': 121, 'פ': 129, 'ף': 129,
+    'צ': 137, 'ץ': 137, 'ק': 145, 'ר': 153, 'ש': 161, 'ת': 169,
   };
+
+  List<String> _nameLetters = [];
 
   void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    final chapters = <int>{};
-    for (final char in name.split('')) {
-      final ch = _letterToChapter[char];
-      if (ch != null) chapters.add(ch);
-    }
-    // Add נשמה
-    for (final char in 'נשמה'.split('')) {
-      final ch = _letterToChapter[char];
-      if (ch != null) chapters.add(ch);
+    // Collect unique letters from name + נשמה
+    final allChars = '$name נשמה'.split('').where((c) => c.trim().isNotEmpty);
+    final letters = <String>[];
+    for (final char in allChars) {
+      // Normalize sofit letters
+      final normalized = switch (char) {
+        'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
+        _ => char,
+      };
+      if (_letterToVerseStart.containsKey(normalized) && !letters.contains(normalized)) {
+        letters.add(normalized);
+      }
     }
 
     setState(() {
-      _chapters = chapters.toList()..sort();
+      _nameLetters = letters;
       _displayName = name;
     });
-    _loadChapters();
+    _loadSections();
   }
 
-  Future<void> _loadChapters() async {
+  Future<void> _loadSections() async {
     setState(() { _isLoading = true; _loadedText = []; });
 
     final texts = <String>[];
-    for (final chapter in _chapters) {
+    for (final letter in _nameLetters) {
+      final startVerse = _letterToVerseStart[letter]!;
+      final endVerse = startVerse + 7;
+      final ref = 'Psalms.119.$startVerse-$endVerse';
+
+      texts.add('--- תהילים קי"ט - אות $letter ---');
+
       try {
-        final data = await _sefaria.getText('Psalms.$chapter');
+        final data = await _sefaria.getText(ref);
         final versions = data['versions'] as List?;
         if (versions != null) {
           for (final version in versions) {
             if (version['actualLanguage'] == 'he' && version['text'] != null) {
-              texts.add('--- פרק $chapter ---');
               final text = version['text'];
               if (text is List) {
                 for (final item in text) {
@@ -853,14 +864,14 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                       ),
                     ],
                   ),
-                  if (_chapters.isNotEmpty) ...[
+                  if (_nameLetters.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text('תהילים לעילוי נשמת $_displayName:',
+                    Text('תהילים קי"ט לעילוי נשמת $_displayName:',
                         style: GoogleFonts.rubik(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1B5E20))),
-                    Text('פרקים: ${_chapters.join(", ")}',
+                    Text('אותיות: ${_nameLetters.join(", ")} + נ,ש,מ,ה',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
