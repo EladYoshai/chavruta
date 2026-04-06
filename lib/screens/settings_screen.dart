@@ -356,8 +356,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // Notification settings
-              ...[
+              // Notification settings (mobile only)
+              if (!kIsWeb) ...[
                 const SizedBox(height: 20),
                 _buildLabel('תזכורת ללימוד יומי'),
                 const SizedBox(height: 8),
@@ -442,8 +442,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
 
-              // Reminder days
-              if (_notificationsEnabled) ...[
+              // Reminder days (mobile only)
+              if (!kIsWeb && _notificationsEnabled) ...[
                 const SizedBox(height: 12),
                 _buildLabel('ימי תזכורת'),
                 const SizedBox(height: 8),
@@ -461,8 +461,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
 
-              // Omer reminder
-              ...[
+              // Omer reminder (mobile only)
+              if (!kIsWeb) ...[
                 const SizedBox(height: 20),
                 _buildLabel('תזכורת לספירת העומר'),
                 const SizedBox(height: 8),
@@ -569,8 +569,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
 
-              // Candle lighting reminder (women only)
-              if (_selectedGender == 'נקבה') ...[
+              // Candle lighting reminder (women only, mobile only)
+              if (!kIsWeb && _selectedGender == 'נקבה') ...[
                 const SizedBox(height: 20),
                 _buildLabel('תזכורת הדלקת נרות שבת'),
                 const SizedBox(height: 8),
