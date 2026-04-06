@@ -772,13 +772,13 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                       },
                     ),
                   ),
-                  // Continuous prayer text
+                  // Continuous prayer text - all items built eagerly for slider navigation
                   Expanded(
-                    child: ListView.builder(
+                    child: SingleChildScrollView(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: widget.category.items.length,
-                      itemBuilder: (context, index) {
+                      child: Column(
+                        children: List.generate(widget.category.items.length, (index) {
                         final prayer = widget.category.items[index];
                         final texts = index < _prayerTexts.length
                             ? _prayerTexts[index]
@@ -853,7 +853,8 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                             ],
                           ),
                         );
-                      },
+                      }),
+                      ),
                     ),
                   ),
                 ],
@@ -1213,6 +1214,13 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     'צ': 90, 'ץ': 90, 'ק': 100, 'ר': 50, 'ש': 150, 'ת': 100,
   };
 
+  // Hebrew chapter names (standard notation with geresh)
+  static const _chapterHebrew = {
+    1: "א'", 2: "ב'", 3: "ג'", 4: "ד'", 5: "ה'", 6: "ו'", 7: "ז'", 8: "ח'",
+    9: "ט'", 10: "י'", 20: "כ'", 30: "ל'", 40: "מ'", 50: "נ'", 60: "ס'",
+    70: "ע'", 80: "פ'", 90: "צ'", 100: "ק'", 150: "ק\"נ",
+  };
+
   List<String> _nameLetters = [];
 
   List<String> _nameOnlyLetters = [];
@@ -1274,7 +1282,8 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
   Future<void> _loadChapter(List<String> texts, String letter) async {
     final chapter = _letterToChapter[letter];
     if (chapter == null) return;
-    texts.add('--- אות $letter - פרק $chapter ---');
+    final chHe = _chapterHebrew[chapter] ?? '$chapter';
+    texts.add('--- אות $letter - פרק $chHe ---');
     try {
       final data = await _sefaria.getText('Psalms.$chapter');
       final versions = data['versions'] as List?;
@@ -1365,10 +1374,10 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1B5E20))),
-                    Text('אותיות השם: ${_nameOnlyLetters.map((l) => '$l (פרק ${_letterToChapter[l]})').join(", ")}',
+                    Text('אותיות השם: ${_nameOnlyLetters.map((l) => '$l (פרק ${_chapterHebrew[_letterToChapter[l]] ?? _letterToChapter[l]})').join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
-                    Text('אותיות נשמה: ${_neshmaLetters.map((l) => '$l (פרק ${_letterToChapter[l]})').join(", ")}',
+                    Text('אותיות נשמה: ${_neshmaLetters.map((l) => '$l (פרק ${_chapterHebrew[_letterToChapter[l]] ?? _letterToChapter[l]})').join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
@@ -1646,8 +1655,8 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     'Mishnah_Taanit': 'תענית',
   };
 
-  List<String> _nameMasechetot = [];
-  List<String> _neshamaMasechetot = [];
+  List<(String, String)> _namePairs = []; // (letter, ref)
+  List<(String, String)> _neshamaPairs = [];
 
   String _norm(String c) => switch (c) {
     'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ', _ => c,
@@ -1657,34 +1666,32 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    // Name letters
-    final nameM = <String>[];
+    final namePairs = <(String, String)>[];
     final seen = <String>{};
     for (final char in name.split('')) {
       final n = _norm(char);
       final list = _letterToMasechet[n];
       if (list != null && list.isNotEmpty && !seen.contains(n)) {
         seen.add(n);
-        nameM.add(list.first);
+        namePairs.add((n, list.first));
       }
     }
 
-    // נשמה letters - always separate
-    final neshM = <String>[];
+    final neshamaPairs = <(String, String)>[];
     final seenN = <String>{};
     for (final char in 'נשמה'.split('')) {
       final n = _norm(char);
       final list = _letterToMasechet[n];
       if (list != null && list.isNotEmpty && !seenN.contains(n)) {
         seenN.add(n);
-        neshM.add(list.first);
+        neshamaPairs.add((n, list.first));
       }
     }
 
     setState(() {
-      _nameMasechetot = nameM;
-      _neshamaMasechetot = neshM;
-      _selectedMasechetot = [...nameM, ...neshM];
+      _namePairs = namePairs;
+      _neshamaPairs = neshamaPairs;
+      _selectedMasechetot = [...namePairs.map((p) => p.$2), ...neshamaPairs.map((p) => p.$2)];
       _displayName = name;
     });
     _loadMasechetot();
@@ -1695,24 +1702,22 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
 
     final texts = <String>[];
 
-    // Name masechetot
     texts.add('--- אותיות שם הנפטר/ת: $_displayName ---');
-    for (final ref in _nameMasechetot) {
-      await _loadOneMasechet(texts, ref);
+    for (final (letter, ref) in _namePairs) {
+      await _loadOneMasechet(texts, ref, letter);
     }
 
-    // נשמה masechetot
     texts.add('--- אותיות נשמה: נ, ש, מ, ה ---');
-    for (final ref in _neshamaMasechetot) {
-      await _loadOneMasechet(texts, ref);
+    for (final (letter, ref) in _neshamaPairs) {
+      await _loadOneMasechet(texts, ref, letter);
     }
 
     if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
-  Future<void> _loadOneMasechet(List<String> texts, String ref) async {
+  Future<void> _loadOneMasechet(List<String> texts, String ref, String letter) async {
       final heName = _masechetNames[ref] ?? ref;
-      texts.add('--- משנה $heName פרק א ---');
+      texts.add('--- אות $letter - משנה $heName פרק א ---');
       try {
         final data = await _sefaria.getText('$ref.1');
         final versions = data['versions'] as List?;
