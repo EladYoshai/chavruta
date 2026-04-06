@@ -110,6 +110,7 @@ class UserProgress {
               'rambam': false,
               'shmirat_halashon': false,
               'pirkei_avot': false,
+              'nach_yomi': false,
               'peninei_halacha': false,
             },
         reminderDays = reminderDays ?? [0, 1, 2, 3, 4], // Sun-Thu default

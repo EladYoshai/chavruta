@@ -63,6 +63,8 @@ class _StudyScreenState extends State<StudyScreen> {
           await _loadShmiratHalashon();
         case StudySectionType.pirkeiAvot:
           await _loadPirkeiAvot();
+        case StudySectionType.nachYomi:
+          await _loadNachYomi();
         case StudySectionType.penineiHalacha:
           await _loadPenineiHalacha();
         case StudySectionType.gemara:
@@ -395,6 +397,128 @@ class _StudyScreenState extends State<StudyScreen> {
         labelColor: const Color(0xFF4E342E),
       ),
     ];
+  }
+
+  // ==========================================
+  // Nach Yomi - 2 chapters per day
+  // ==========================================
+
+  // All Nach books in order (Nevi'im then Ketuvim) with Sefaria ref names
+  static const _nachBooks = [
+    // Nevi'im Rishonim
+    {'ref': 'Joshua', 'he': 'יהושע', 'chapters': 24},
+    {'ref': 'Judges', 'he': 'שופטים', 'chapters': 21},
+    {'ref': 'I_Samuel', 'he': 'שמואל א', 'chapters': 31},
+    {'ref': 'II_Samuel', 'he': 'שמואל ב', 'chapters': 24},
+    {'ref': 'I_Kings', 'he': 'מלכים א', 'chapters': 22},
+    {'ref': 'II_Kings', 'he': 'מלכים ב', 'chapters': 25},
+    // Nevi'im Acharonim
+    {'ref': 'Isaiah', 'he': 'ישעיהו', 'chapters': 66},
+    {'ref': 'Jeremiah', 'he': 'ירמיהו', 'chapters': 52},
+    {'ref': 'Ezekiel', 'he': 'יחזקאל', 'chapters': 48},
+    {'ref': 'Hosea', 'he': 'הושע', 'chapters': 14},
+    {'ref': 'Joel', 'he': 'יואל', 'chapters': 4},
+    {'ref': 'Amos', 'he': 'עמוס', 'chapters': 9},
+    {'ref': 'Obadiah', 'he': 'עובדיה', 'chapters': 1},
+    {'ref': 'Jonah', 'he': 'יונה', 'chapters': 4},
+    {'ref': 'Micah', 'he': 'מיכה', 'chapters': 7},
+    {'ref': 'Nahum', 'he': 'נחום', 'chapters': 3},
+    {'ref': 'Habakkuk', 'he': 'חבקוק', 'chapters': 3},
+    {'ref': 'Zephaniah', 'he': 'צפניה', 'chapters': 3},
+    {'ref': 'Haggai', 'he': 'חגי', 'chapters': 2},
+    {'ref': 'Zechariah', 'he': 'זכריה', 'chapters': 14},
+    {'ref': 'Malachi', 'he': 'מלאכי', 'chapters': 3},
+    // Ketuvim
+    {'ref': 'Psalms', 'he': 'תהילים', 'chapters': 150},
+    {'ref': 'Proverbs', 'he': 'משלי', 'chapters': 31},
+    {'ref': 'Job', 'he': 'איוב', 'chapters': 42},
+    {'ref': 'Song_of_Songs', 'he': 'שיר השירים', 'chapters': 8},
+    {'ref': 'Ruth', 'he': 'רות', 'chapters': 4},
+    {'ref': 'Lamentations', 'he': 'איכה', 'chapters': 5},
+    {'ref': 'Ecclesiastes', 'he': 'קהלת', 'chapters': 12},
+    {'ref': 'Esther', 'he': 'אסתר', 'chapters': 10},
+    {'ref': 'Daniel', 'he': 'דניאל', 'chapters': 12},
+    {'ref': 'Ezra', 'he': 'עזרא', 'chapters': 10},
+    {'ref': 'Nehemiah', 'he': 'נחמיה', 'chapters': 13},
+    {'ref': 'I_Chronicles', 'he': 'דברי הימים א', 'chapters': 29},
+    {'ref': 'II_Chronicles', 'he': 'דברי הימים ב', 'chapters': 36},
+  ];
+
+  // Anchor: Dec 2, 2025 = day 1 of cycle.
+  // April 6, 2026 = day 126 → Jeremiah 39+40.
+  static final _nachAnchor = DateTime(2025, 12, 2);
+
+  // Build flat list of (bookRef, heBookName, chapter) tuples
+  static List<(String, String, int)> _buildNachList() {
+    final list = <(String, String, int)>[];
+    for (final book in _nachBooks) {
+      final ref = book['ref'] as String;
+      final he = book['he'] as String;
+      final chapters = book['chapters'] as int;
+      for (int ch = 1; ch <= chapters; ch++) {
+        list.add((ref, he, ch));
+      }
+    }
+    return list;
+  }
+
+  Future<void> _loadNachYomi() async {
+    final nachList = _buildNachList();
+    // 742 chapters total, 371 days per cycle
+    final totalDays = nachList.length ~/ 2;
+    final daysSinceAnchor = DateTime.now().difference(_nachAnchor).inDays;
+    final dayIndex = daysSinceAnchor % totalDays; // 0-based
+
+    final ch1Index = dayIndex * 2;
+    final ch2Index = dayIndex * 2 + 1;
+
+    final (book1Ref, book1He, chapter1) = nachList[ch1Index];
+    final (book2Ref, book2He, chapter2) = nachList[ch2Index.clamp(0, nachList.length - 1)];
+
+    _hebrewRef = book1Ref == book2Ref
+        ? '$book1He פרקים $chapter1-$chapter2'
+        : '$book1He $chapter1 + $book2He $chapter2';
+
+    _blocks = [];
+
+    // Load both chapters with commentaries
+    for (final (bookRef, bookHe, chapter) in [(book1Ref, book1He, chapter1), (book2Ref, book2He, chapter2)]) {
+      final ref = '$bookRef.$chapter';
+      final data = await _sefaria.getText(ref);
+      final text = _extractHebrewText(data);
+      final heRef = data['heRef']?.toString() ?? '$bookHe פרק $chapter';
+
+      if (text.isNotEmpty) {
+        _blocks.add(TextBlock(
+          label: '📖 $heRef',
+          segments: text,
+          isBold: true,
+          labelColor: const Color(0xFF5D4037),
+        ));
+      }
+
+      // Commentaries - try each, skip if not available
+      for (final (commRef, commLabel, commColor) in [
+        ('Rashi_on_$ref', '🔍 רש"י - $bookHe $chapter', const Color(0xFF1565C0)),
+        ('Metzudat_David_on_$ref', '📝 מצודת דוד - $bookHe $chapter', const Color(0xFF00695C)),
+        ('Malbim_on_$ref', '💎 מלבי"ם - $bookHe $chapter', const Color(0xFF7B1FA2)),
+      ]) {
+        try {
+          final commData = await _sefaria.getText(commRef);
+          if (!commData.containsKey('error')) {
+            final commText = _extractHebrewText(commData);
+            if (commText.isNotEmpty) {
+              _blocks.add(TextBlock(
+                label: commLabel,
+                segments: commText,
+                isBold: false,
+                labelColor: commColor,
+              ));
+            }
+          }
+        } catch (_) {}
+      }
+    }
   }
 
   // Peninei Halacha: volumes with [chapter, sections_per_chapter] pairs

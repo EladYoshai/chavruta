@@ -12,6 +12,7 @@ enum StudySectionType {
   shmiratHalashon,
   pirkeiAvot,
   penineiHalacha,
+  nachYomi,
 }
 
 class StudySection {
@@ -114,6 +115,15 @@ class StudySection {
           color: const Color(0xFF4E342E),
           zuzimReward: 10,
           key: 'pirkei_avot',
+        ),
+        StudySection(
+          type: StudySectionType.nachYomi,
+          title: 'נ"ך יומי',
+          subtitle: 'שני פרקים ביום עם רש"י ומצודות',
+          icon: Icons.history_edu,
+          color: const Color(0xFF5D4037),
+          zuzimReward: 10,
+          key: 'nach_yomi',
         ),
         StudySection(
           type: StudySectionType.penineiHalacha,
