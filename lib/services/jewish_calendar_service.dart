@@ -160,12 +160,17 @@ class JewishCalendarService {
       alHanissimType: alHanissimType,
       hallelType: hallelType,
       sayTachanun: sayTachanun,
+      // Tachanun at mincha: skip on erev shabbat, erev yom tov, erev rosh chodesh, erev any no-tachanun day
+      sayTachanunAtMincha: sayTachanun && dayOfWeek != 5 && !_isTomorrowNoTachanun(month, day, dayOfWeek, isLeapYear),
       isAseretYemeiTshuva: isAseretYemeiTshuva,
       fastDay: fastDay,
       omerDay: omerDay,
       isOmerSeason: isOmerSeason,
       isChanukah: chanukahActive,
       isPurim: isPurim,
+      isShabbatRoshChodesh: isShabbat && isRoshChodesh,
+      isShabbatCholHamoed: isShabbat && isCholHamoed,
+      isYomTovOnShabbat: isShabbat && isYomTov,
     );
   }
 
@@ -329,6 +334,28 @@ class JewishCalendarService {
     return true;
   }
 
+  /// Check if tomorrow has no tachanun (for mincha today skip)
+  static bool _isTomorrowNoTachanun(int month, int day, int dayOfWeek, bool isLeapYear) {
+    // Tomorrow is Shabbat (today is Friday = dayOfWeek 5)
+    if (dayOfWeek == 5) return true;
+    // Tomorrow is Rosh Chodesh (today is 29th or 30th)
+    if (day == 29 || day == 30) return true;
+    // Erev Yom Tov / Erev specific days
+    // Erev Pesach (14 Nisan)
+    if (month == 1 && day == 14) return true;
+    // Erev Sukkot (14 Tishrei)
+    if (month == 7 && day == 14) return true;
+    // Erev Shavuot (5 Sivan)
+    if (month == 3 && day == 5) return true;
+    // Erev RH (29 Elul)
+    if (month == 6 && day == 29) return true;
+    // Erev YK (9 Tishrei)
+    if (month == 7 && day == 9) return true;
+    // Erev Chanukah (24 Kislev)
+    if (month == 9 && day == 24) return true;
+    return false;
+  }
+
   // ==========================================
   // Hallel type
   // ==========================================
@@ -450,12 +477,16 @@ class SiddurDayInfo {
   final AlHanissimType alHanissimType;
   final HallelType hallelType;
   final bool sayTachanun;
+  final bool sayTachanunAtMincha; // false on erev shabbat/yomtov/rosh chodesh
   final bool isAseretYemeiTshuva;
   final FastDayType fastDay;
   final int omerDay;
   final bool isOmerSeason;
   final bool isChanukah;
   final bool isPurim;
+  final bool isShabbatRoshChodesh;
+  final bool isShabbatCholHamoed;
+  final bool isYomTovOnShabbat;
 
   const SiddurDayInfo({
     required this.hebrewDate,
@@ -479,12 +510,16 @@ class SiddurDayInfo {
     required this.alHanissimType,
     required this.hallelType,
     required this.sayTachanun,
+    required this.sayTachanunAtMincha,
     required this.isAseretYemeiTshuva,
     required this.fastDay,
     required this.omerDay,
     required this.isOmerSeason,
     required this.isChanukah,
     required this.isPurim,
+    required this.isShabbatRoshChodesh,
+    required this.isShabbatCholHamoed,
+    required this.isYomTovOnShabbat,
   });
 
   /// Human-readable day description
@@ -499,28 +534,51 @@ class SiddurDayInfo {
     return 'יום חול';
   }
 
-  /// List of active prayer modifications for display
-  List<String> get activeModifications {
+  /// List of active prayer modifications for display (nusach-aware)
+  List<String> getActiveModifications(String nusach) {
     final mods = <String>[];
     if (mashivHaruach) {
       mods.add('✅ משיב הרוח ומוריד הגשם');
     } else {
-      mods.add('✅ מוריד הטל (ספרד/עדות המזרח) / ללא תוספת (אשכנז)');
+      if (nusach == 'ashkenaz') {
+        mods.add('✅ ללא תוספת (לא אומרים מוריד הטל)');
+      } else {
+        mods.add('✅ מוריד הטל');
+      }
     }
     if (veteinTalUmatar) {
       mods.add('✅ ותן טל ומטר לברכה');
     } else {
       mods.add('✅ ותן ברכה');
     }
-    if (sayYaalehVyavo) mods.add('✅ יעלה ויבוא ($yaalehVyavoOccasion)');
-    if (sayAlHanissim) mods.add('✅ על הניסים (${alHanissimType.hebrewName})');
-    if (isAseretYemeiTshuva) mods.add('✅ תוספות עשי"ת (זכרנו, מי כמוך, וכתוב, בספר)');
-    if (hallelType != HallelType.none) mods.add('✅ ${hallelType.hebrewName}');
+    if (sayYaalehVyavo) mods.add('✅ יעלה ויבוא - $yaalehVyavoOccasion');
+    if (sayAlHanissim) mods.add('✅ על הניסים - ${alHanissimType.hebrewName}');
+    if (isAseretYemeiTshuva) {
+      mods.add('✅ המלך הקדוש (במקום האל הקדוש)');
+      mods.add('✅ המלך המשפט (במקום מלך אוהב צדקה ומשפט)');
+      mods.add('✅ זכרנו לחיים, מי כמוך, וכתוב, בספר');
+    }
+    if (hallelType == HallelType.full) {
+      mods.add('✅ הלל שלם עם ברכה');
+    } else if (hallelType == HallelType.half) {
+      if (nusach == 'edot_hamizrach') {
+        mods.add('✅ חצי הלל (בלי ברכה)');
+      } else {
+        mods.add('✅ חצי הלל עם ברכה');
+      }
+    }
     if (!sayTachanun) mods.add('❌ אין תחנון');
     if (fastDay != FastDayType.none && fastDay != FastDayType.yomKippur) {
-      mods.add('✅ עננו');
+      if (nusach == 'ashkenaz') {
+        mods.add('✅ עננו (במנחה בלבד)');
+      } else {
+        mods.add('✅ עננו (בשחרית ובמנחה)');
+      }
     }
     if (isOmerSeason) mods.add('✅ ספירת העומר - יום $omerDay');
+    if (isShabbatRoshChodesh) mods.add('📌 מוסף מיוחד לשבת ר"ח (אתה יצרת)');
+    if (isShabbatCholHamoed) mods.add('📌 שבת חול המועד - יעלה ויבוא בעמידה');
+    if (isYomTovOnShabbat) mods.add('📌 יו"ט בשבת - תוספת שבת בעמידת יו"ט');
     return mods;
   }
 }
