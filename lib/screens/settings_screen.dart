@@ -323,19 +323,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       _dailyGoal <= 2
                           ? 'קל - מתאים להתחלה'
-                          : _dailyGoal <= 3
+                          : _dailyGoal <= 4
                               ? 'בינוני - קצב נוח'
-                              : _dailyGoal <= 4
+                              : _dailyGoal <= 7
                                   ? 'טוב - לימוד רציני'
-                                  : 'מלא - כל הלימודים!',
+                                  : _dailyGoal <= 10
+                                      ? 'מתמיד - לימוד מקיף'
+                                      : 'מלא - כל הלימודים!',
                       style: GoogleFonts.rubik(
                           fontSize: 13, color: Colors.grey.shade600),
                     ),
                     Slider(
                       value: _dailyGoal.toDouble(),
                       min: 1,
-                      max: 5,
-                      divisions: 4,
+                      max: 11,
+                      divisions: 10,
                       activeColor: AppColors.deepBlue,
                       label: '$_dailyGoal',
                       onChanged: (v) =>
@@ -346,7 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         Text('1', style: GoogleFonts.rubik(
                             fontSize: 12, color: Colors.grey)),
-                        Text('5', style: GoogleFonts.rubik(
+                        Text('11', style: GoogleFonts.rubik(
                             fontSize: 12, color: Colors.grey)),
                       ],
                     ),
