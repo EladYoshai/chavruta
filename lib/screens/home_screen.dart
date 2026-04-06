@@ -847,21 +847,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: _buildToolCard(
                               context,
-                              emoji: '📚',
-                              label: 'סיום מסכת',
-                              color: const Color(0xFFC62828),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const SiyumTrackerScreen()),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildToolCard(
-                              context,
                               emoji: '🕯️',
                               label: 'מחשבון יארצייט',
                               color: AppColors.deepBlue,
