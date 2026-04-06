@@ -34,6 +34,9 @@ dependencies:
   geolocator: ^13.0.0
   # URL launcher for maps
   url_launcher: ^6.3.0
+  firebase_core: ^4.6.0
+  firebase_auth: ^6.3.0
+  cloud_firestore: ^6.2.0
 
 dev_dependencies:
   flutter_test:

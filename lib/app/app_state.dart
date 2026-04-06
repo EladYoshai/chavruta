@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/user_progress.dart';
 import '../services/analytics_service.dart';
+import '../services/firebase_service.dart';
 import '../services/storage_service.dart';
 import '../utils/constants.dart';
 
@@ -21,11 +22,18 @@ class AppState extends ChangeNotifier {
     _progress = await _storage.loadProgress();
     _isLoading = false;
     notifyListeners();
+    // Initial cloud sync
+    FirebaseService.syncProgress(_progress);
+  }
+
+  void _syncToCloud() {
+    FirebaseService.syncProgress(_progress);
   }
 
   Future<void> completeSection(String sectionKey, int zuzimReward) async {
     await _storage.markSectionComplete(_progress, sectionKey, zuzimReward);
     AnalyticsService.sectionCompleted(sectionKey);
+    _syncToCloud();
     notifyListeners();
   }
 
@@ -89,6 +97,7 @@ class AppState extends ChangeNotifier {
       _progress.candleLightingEnabled = candleLightingEnabled;
     }
     await _storage.saveProgress(_progress);
+    _syncToCloud();
     notifyListeners();
   }
 
@@ -99,6 +108,7 @@ class AppState extends ChangeNotifier {
     _progress.zuzim += zuzimEarned;
     AnalyticsService.quizCompleted(correct, total);
     await _storage.saveProgress(_progress);
+    _syncToCloud();
     notifyListeners();
   }
 

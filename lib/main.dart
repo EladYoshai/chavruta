@@ -6,6 +6,7 @@ import 'app/app_state.dart';
 import 'app/theme.dart';
 import 'screens/home_screen.dart';
 import 'services/daf_summary_service.dart';
+import 'services/firebase_service.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -16,6 +17,9 @@ void main() async {
 
   // Init daf summary cache
   await DafSummaryService.init();
+
+  // Init Firebase (cloud sync)
+  await FirebaseService.init();
 
   // Init notifications (mobile only)
   if (!kIsWeb) {
