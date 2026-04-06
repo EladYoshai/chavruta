@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import '../app/app_state.dart';
 import '../data/siddur_structure.dart';
+import '../services/jewish_calendar_service.dart';
 import '../services/sefaria_service.dart';
 import '../utils/constants.dart';
 import '../widgets/torah_text_viewer.dart';
@@ -18,20 +18,25 @@ class SiddurScreen extends StatefulWidget {
 
 class _SiddurScreenState extends State<SiddurScreen> {
   List<PrayerCategory> _mainCategories = [];
+  SiddurDayInfo? _dayInfo;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStructure();
+    _loadAll();
   }
 
-  Future<void> _loadStructure() async {
+  Future<void> _loadAll() async {
     final nusach = context.read<AppState>().progress.nusach;
-    final cats = await SiddurStructure.loadCategories(nusach);
+    final results = await Future.wait([
+      SiddurStructure.loadCategories(nusach),
+      JewishCalendarService.getDayInfo(),
+    ]);
     if (mounted) {
       setState(() {
-        _mainCategories = cats;
+        _mainCategories = results[0] as List<PrayerCategory>;
+        _dayInfo = results[1] as SiddurDayInfo;
         _isLoading = false;
       });
     }
@@ -41,7 +46,7 @@ class _SiddurScreenState extends State<SiddurScreen> {
   Widget build(BuildContext context) {
     final nusach = context.watch<AppState>().progress.nusach;
     final nusachName = _getNusachName(nusach);
-    final dayInfo = _getDayInfo();
+    final dayInfo = _dayInfo;
 
     return Scaffold(
       appBar: AppBar(
@@ -86,38 +91,16 @@ class _SiddurScreenState extends State<SiddurScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Day info banner
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(dayInfo.emoji, style: const TextStyle(fontSize: 28)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            dayInfo.label,
-                            style: GoogleFonts.rubik(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1B5E20),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Smart day info banner with all modifications
+                  _buildDayBanner(dayInfo, nusach),
                   const SizedBox(height: 16),
 
                   // Main tefilot from Sefaria index (these work via tree-walking)
                   _buildSectionHeader('תפילות'),
                   ..._buildMainTefilot(context, dayInfo),
 
-                  // Omer - only during season, show today's count
-                  if (dayInfo.isOmerSeason) ...[
+                  // Omer - only during season
+                  if (dayInfo != null && dayInfo.isOmerSeason) ...[
                     _buildOmerCard(context, nusach, dayInfo),
                   ],
 
@@ -216,9 +199,9 @@ class _SiddurScreenState extends State<SiddurScreen> {
   }
 
   /// Build main tefilot cards from the loaded categories
-  List<Widget> _buildMainTefilot(BuildContext context, _DayInfo dayInfo) {
-    // Map category names to the ones we want to show
-    final showOrder = dayInfo.isShabbat
+  List<Widget> _buildMainTefilot(BuildContext context, SiddurDayInfo? dayInfo) {
+    final isShabbat = dayInfo?.isShabbat ?? false;
+    final showOrder = isShabbat
         ? ['שחרית שבת', 'מוסף שבת', 'מנחה שבת', 'קבלת שבת', 'הבדלה']
         : ['שחרית', 'מנחה', 'ערבית'];
 
@@ -330,7 +313,7 @@ class _SiddurScreenState extends State<SiddurScreen> {
     );
   }
 
-  Widget _buildOmerCard(BuildContext context, String nusach, _DayInfo dayInfo) {
+  Widget _buildOmerCard(BuildContext context, String nusach, SiddurDayInfo dayInfo) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
@@ -423,6 +406,93 @@ class _SiddurScreenState extends State<SiddurScreen> {
     );
   }
 
+  Widget _buildDayBanner(SiddurDayInfo? dayInfo, String nusach) {
+    if (dayInfo == null) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text('טוען נתוני יום...', style: GoogleFonts.rubik(fontSize: 14, color: Colors.grey)),
+      );
+    }
+
+    final mods = dayInfo.getActiveModifications(nusach);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B5E20).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF1B5E20).withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Day title
+          Row(
+            children: [
+              const Text('📅', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dayInfo.dayDescription,
+                      style: GoogleFonts.rubik(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1B5E20),
+                      ),
+                    ),
+                    Text(
+                      dayInfo.hebrewDate,
+                      style: GoogleFonts.rubik(fontSize: 13, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (mods.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'שינויים בתפילה היום:',
+                    style: GoogleFonts.rubik(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...mods.map((mod) => Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      mod,
+                      style: GoogleFonts.rubik(fontSize: 13, color: AppColors.darkBrown, height: 1.4),
+                    ),
+                  )),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -432,52 +502,6 @@ class _SiddurScreenState extends State<SiddurScreen> {
               fontWeight: FontWeight.bold,
               color: AppColors.darkBrown)),
     );
-  }
-
-  // ==========================================
-  // Day detection
-  // ==========================================
-
-  _DayInfo _getDayInfo() {
-    final now = DateTime.now();
-    final jewishCal = JewishCalendar.fromDateTime(now);
-    final month = jewishCal.getJewishMonth();
-    final day = jewishCal.getJewishDayOfMonth();
-    final dayOfWeek = now.weekday;
-
-    // Omer day - shkia aware (after sunset = next day's count)
-    final geoLocation = GeoLocation.setLocation('Jerusalem', 31.7683, 35.2137, now);
-    final zmanimCal = ComplexZmanimCalendar.intGeoLocation(geoLocation);
-    final sunset = zmanimCal.getSunset();
-    final isAfterShkia = sunset != null && now.isAfter(sunset);
-
-    final omerDate = isAfterShkia
-        ? JewishCalendar.fromDateTime(now.add(const Duration(days: 1)))
-        : jewishCal;
-    final omerMonth = omerDate.getJewishMonth();
-    final omerDayOfMonth = omerDate.getJewishDayOfMonth();
-    int omerDay = 0;
-    if (omerMonth == 1 && omerDayOfMonth >= 16) omerDay = omerDayOfMonth - 15;
-    if (omerMonth == 2) omerDay = omerDayOfMonth + 15;
-    if (omerMonth == 3 && omerDayOfMonth <= 5) omerDay = omerDayOfMonth + 44;
-    bool isOmer = omerDay > 0 && omerDay <= 49;
-
-    if (dayOfWeek == 6) {
-      return _DayInfo('שבת קודש', '✡️', isShabbat: true, isOmerSeason: isOmer, omerDay: omerDay);
-    }
-    if (month == 1 && day >= 16 && day <= 20) {
-      return _DayInfo('חול המועד פסח', '🫓', isOmerSeason: isOmer, omerDay: omerDay);
-    }
-    if (month == 1 && (day == 15 || day == 21)) {
-      return _DayInfo('פסח', '🫓', isShabbat: true, omerDay: omerDay);
-    }
-    if (month == 7 && day >= 16 && day <= 20) {
-      return _DayInfo('חול המועד סוכות', '🏗️', isOmerSeason: isOmer, omerDay: omerDay);
-    }
-    if (day == 1 || day == 30) {
-      return _DayInfo('ראש חודש', '🌙', isOmerSeason: isOmer, omerDay: omerDay);
-    }
-    return _DayInfo('יום חול', '📖', isOmerSeason: isOmer, omerDay: omerDay);
   }
 
   // ==========================================
@@ -532,16 +556,6 @@ class _SiddurScreenState extends State<SiddurScreen> {
     'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Traveler%27s_Prayer',
     _ => 'Siddur_Sefard,_Blessings,_Traveler%27s_Prayer',
   };
-}
-
-class _DayInfo {
-  final String label;
-  final String emoji;
-  final bool isShabbat;
-  final bool isOmerSeason;
-  final int omerDay;
-  const _DayInfo(this.label, this.emoji,
-      {this.isShabbat = false, this.isOmerSeason = false, this.omerDay = 0});
 }
 
 // ==========================================
