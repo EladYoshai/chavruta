@@ -16,6 +16,10 @@ class UserProgress {
 
   // Nusach for siddur
   String nusach; // 'ashkenaz', 'sefard', 'edot_hamizrach'
+  String subNusach; // '', 'moroccan', 'iraqi', 'syrian', 'yemenite', 'jerusalem'
+
+  // Minhag overrides (user can customize)
+  Map<String, bool> minhagOverrides; // e.g. 'hallel_yom_haatzmaut': true
 
   // Daily goal
   int dailyGoalSections; // how many sections to complete per day (1-5)
@@ -74,6 +78,8 @@ class UserProgress {
     this.age = 0,
     this.city = '',
     this.nusach = 'ashkenaz',
+    this.subNusach = '',
+    Map<String, bool>? minhagOverrides,
     this.dailyGoalSections = 5,
     this.totalQuizCorrect = 0,
     this.totalQuizAnswered = 0,
@@ -113,6 +119,7 @@ class UserProgress {
               'nach_yomi': false,
               'peninei_halacha': false,
             },
+        minhagOverrides = minhagOverrides ?? {},
         reminderDays = reminderDays ?? [0, 1, 2, 3, 4], // Sun-Thu default
         dailyTracker = dailyTracker ?? _defaultDailyTracker(),
         customTargets = customTargets ?? [],
@@ -220,6 +227,8 @@ class UserProgress {
         'age': age,
         'city': city,
         'nusach': nusach,
+        'subNusach': subNusach,
+        'minhagOverrides': minhagOverrides,
         'dailyGoalSections': dailyGoalSections,
         'totalQuizCorrect': totalQuizCorrect,
         'totalQuizAnswered': totalQuizAnswered,
@@ -264,6 +273,10 @@ class UserProgress {
         age: json['age'] ?? 0,
         city: json['city'] ?? '',
         nusach: json['nusach'] ?? 'ashkenaz',
+        subNusach: json['subNusach'] ?? '',
+        minhagOverrides: json['minhagOverrides'] != null
+            ? Map<String, bool>.from(json['minhagOverrides'])
+            : null,
         dailyGoalSections: json['dailyGoalSections'] ?? 5,
         totalQuizCorrect: json['totalQuizCorrect'] ?? 0,
         totalQuizAnswered: json['totalQuizAnswered'] ?? 0,

@@ -634,3 +634,311 @@ enum FastDayType {
     FastDayType.none => '',
   };
 }
+
+// ==========================================
+// Tefila type (silent vs chazzan)
+// ==========================================
+
+enum TefilaType {
+  shacharit,
+  mincha,
+  arvit,
+  musaf;
+
+  String get hebrewName => switch (this) {
+    TefilaType.shacharit => 'שחרית',
+    TefilaType.mincha => 'מנחה',
+    TefilaType.arvit => 'ערבית',
+    TefilaType.musaf => 'מוסף',
+  };
+}
+
+enum AmidaMode {
+  silent,    // תפילת לחש
+  chazara;   // חזרת הש"ץ
+
+  String get hebrewName => switch (this) {
+    AmidaMode.silent => 'תפילת לחש',
+    AmidaMode.chazara => 'חזרת הש"ץ',
+  };
+}
+
+// ==========================================
+// Sub-nusach for Edot HaMizrach
+// ==========================================
+
+enum EdotHaMizrachSubNusach {
+  general,    // ספרדי כללי (default)
+  moroccan,   // מרוקאי
+  iraqi,      // עיראקי
+  syrian,     // סורי / חלבי
+  yemenite,   // תימני (בלדי/שאמי)
+  jerusalem;  // ירושלמי
+
+  String get hebrewName => switch (this) {
+    EdotHaMizrachSubNusach.general => 'ספרדי כללי',
+    EdotHaMizrachSubNusach.moroccan => 'מרוקאי',
+    EdotHaMizrachSubNusach.iraqi => 'עיראקי',
+    EdotHaMizrachSubNusach.syrian => 'סורי / חלבי',
+    EdotHaMizrachSubNusach.yemenite => 'תימני',
+    EdotHaMizrachSubNusach.jerusalem => 'ירושלמי',
+  };
+}
+
+// ==========================================
+// Minhag Profile - user-customizable overrides
+// ==========================================
+
+class MinhagProfile {
+  // Hallel on modern holidays
+  final bool hallelYomHaatzmaut;      // default: false (user setting)
+  final bool hallelYomYerushalayim;   // default: false
+
+  // Morid hatal in summer (Ashkenaz)
+  final bool ashkenazSayMoridHatal;   // default: false (GRA/Israeli = true)
+
+  // Tachanun overrides
+  final bool tachanunOnIsruChag;      // default: false (most skip)
+  final bool tachanunSivan7to12;      // default: false (many skip through 12)
+
+  // Avinu Malkeinu
+  final bool avinuMalkeinuOnFasts;    // default: true (Ashkenaz), varies
+
+  // Ledavid Hashem Ori (Elul-Sukkot)
+  final bool sayLedavidHaOri;         // default: true
+  final int ledavidStopDay;           // 21 (Hoshana Raba) or 22 (Shmini Atzeret)
+
+  // Mizmor Letoda
+  final bool sayMizmorLetoda;         // default: true (skip Shabbat/YT/erev Pesach)
+
+  // Lamenatzeach (depends on tachanun)
+  final bool sayLamenatzeach;         // default: true (skip when no tachanun)
+
+  const MinhagProfile({
+    this.hallelYomHaatzmaut = false,
+    this.hallelYomYerushalayim = false,
+    this.ashkenazSayMoridHatal = false,
+    this.tachanunOnIsruChag = false,
+    this.tachanunSivan7to12 = false,
+    this.avinuMalkeinuOnFasts = true,
+    this.sayLedavidHaOri = true,
+    this.ledavidStopDay = 21,
+    this.sayMizmorLetoda = true,
+    this.sayLamenatzeach = true,
+  });
+
+  /// Create from user's saved overrides map
+  factory MinhagProfile.fromOverrides(Map<String, bool> overrides) {
+    return MinhagProfile(
+      hallelYomHaatzmaut: overrides['hallel_yom_haatzmaut'] ?? false,
+      hallelYomYerushalayim: overrides['hallel_yom_yerushalayim'] ?? false,
+      ashkenazSayMoridHatal: overrides['ashkenaz_morid_hatal'] ?? false,
+      tachanunOnIsruChag: overrides['tachanun_isru_chag'] ?? false,
+      tachanunSivan7to12: overrides['tachanun_sivan_7_12'] ?? false,
+      avinuMalkeinuOnFasts: overrides['avinu_malkeinu_fasts'] ?? true,
+      sayLedavidHaOri: overrides['ledavid_ha_ori'] ?? true,
+      ledavidStopDay: (overrides['ledavid_stop_shmini'] ?? false) ? 22 : 21,
+      sayMizmorLetoda: overrides['mizmor_letoda'] ?? true,
+      sayLamenatzeach: overrides['lamenatzeach'] ?? true,
+    );
+  }
+}
+
+// ==========================================
+// Precedence Engine - resolves conflicts
+// ==========================================
+
+class DayPrecedence {
+  /// Returns the precedence level (higher = takes priority)
+  /// Used when multiple day types overlap
+  static int getPrecedence(SiddurDayInfo info) {
+    // Yom Kippur is highest
+    if (info.fastDay == FastDayType.yomKippur) return 100;
+    // Yom Tov
+    if (info.isYomTov) return 90;
+    // Shabbat + Yom Tov
+    if (info.isYomTovOnShabbat) return 95;
+    // Shabbat + Chol HaMoed
+    if (info.isShabbatCholHamoed) return 85;
+    // Shabbat + Rosh Chodesh
+    if (info.isShabbatRoshChodesh) return 80;
+    // Regular Shabbat
+    if (info.isShabbat) return 70;
+    // Chol HaMoed
+    if (info.isCholHamoed) return 60;
+    // Chanukah
+    if (info.isChanukah) return 50;
+    // Rosh Chodesh
+    if (info.isRoshChodesh) return 45;
+    // Fast day
+    if (info.fastDay != FastDayType.none) return 40;
+    // Purim
+    if (info.isPurim) return 55;
+    // Regular weekday
+    return 10;
+  }
+
+  /// Determine which Amidah structure to use
+  static AmidaStructure getAmidaStructure(SiddurDayInfo info, TefilaType tefila) {
+    // Yom Tov (including Yom Tov on Shabbat)
+    if (info.isYomTov) {
+      if (tefila == TefilaType.musaf) return AmidaStructure.musafYomTov;
+      return AmidaStructure.yomTov; // 7 brachot with holiday middle
+    }
+
+    // Shabbat
+    if (info.isShabbat) {
+      if (info.isShabbatRoshChodesh && tefila == TefilaType.musaf) {
+        return AmidaStructure.musafShabbatRoshChodesh; // אתה יצרת
+      }
+      if (info.isShabbatCholHamoed && tefila == TefilaType.musaf) {
+        return AmidaStructure.musafCholHaMoed; // with Shabbat additions
+      }
+      if (tefila == TefilaType.musaf) return AmidaStructure.musafShabbat;
+      return AmidaStructure.shabbat; // 7 brachot with Shabbat middle
+    }
+
+    // Rosh Chodesh / Chol HaMoed musaf
+    if (tefila == TefilaType.musaf) {
+      if (info.isRoshChodesh) return AmidaStructure.musafRoshChodesh;
+      if (info.isCholHamoed) return AmidaStructure.musafCholHaMoed;
+    }
+
+    // Regular weekday (19 brachot with insertions)
+    return AmidaStructure.weekday;
+  }
+
+  /// Determine what insertions are needed for weekday amidah
+  static List<AmidaInsertion> getInsertions(SiddurDayInfo info, TefilaType tefila,
+      String nusach, AmidaMode mode, MinhagProfile minhag) {
+    final insertions = <AmidaInsertion>[];
+
+    // === Bracha 1 (Avot) ===
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.zachrenu);
+    }
+
+    // === Bracha 2 (Gvurot) ===
+    if (info.mashivHaruach) {
+      insertions.add(AmidaInsertion.mashivHaruach);
+    } else {
+      if (nusach != 'ashkenaz' || minhag.ashkenazSayMoridHatal) {
+        insertions.add(AmidaInsertion.moridHatal);
+      }
+      // Ashkenaz without GRA: nothing (no insertion)
+    }
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.miKamocha);
+    }
+
+    // === Bracha 3 (Kedusha) ===
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.hamelechHakadosh);
+    }
+
+    // === Bracha 9 (Birkat Hashanim) ===
+    if (info.veteinTalUmatar) {
+      insertions.add(AmidaInsertion.veteinTalUmatar);
+    } else {
+      insertions.add(AmidaInsertion.veteinBracha);
+    }
+
+    // === Bracha 11 (Din) ===
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.hamelechHamishpat);
+    }
+
+    // === Bracha 16 (Shma Kolenu) ===
+    if (info.fastDay != FastDayType.none && info.fastDay != FastDayType.yomKippur) {
+      // Aneinu for individual
+      if (nusach == 'ashkenaz') {
+        if (tefila == TefilaType.mincha) {
+          insertions.add(AmidaInsertion.aneinuIndividual);
+        }
+      } else {
+        // Sefard/Edot HaMizrach: both shacharit and mincha
+        if (tefila == TefilaType.shacharit || tefila == TefilaType.mincha) {
+          insertions.add(AmidaInsertion.aneinuIndividual);
+        }
+      }
+      // Chazzan: separate bracha between 7 and 8
+      if (mode == AmidaMode.chazara) {
+        insertions.add(AmidaInsertion.aneinuChazzan);
+      }
+    }
+
+    // === Bracha 17 (Avoda / Retzeh) ===
+    // Ya'aleh v'Yavo - ONLY as insertion in weekday amidah
+    // (In Yom Tov amidah it's built-in, not an insertion)
+    if (info.sayYaalehVyavo && !info.isYomTov) {
+      insertions.add(AmidaInsertion.yaalehVyavo);
+    }
+
+    // === Bracha 18 (Hoda'a / Modim) ===
+    if (info.sayAlHanissim) {
+      insertions.add(AmidaInsertion.alHanissim);
+    }
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.ukhtov);
+    }
+    // Modim d'Rabbanan for chazara
+    if (mode == AmidaMode.chazara) {
+      insertions.add(AmidaInsertion.modimDerabbanan);
+    }
+
+    // === Last bracha (Shalom) ===
+    if (info.isAseretYemeiTshuva) {
+      insertions.add(AmidaInsertion.besefer);
+    }
+
+    // === Birkat Kohanim (chazara only, Israel: daily, abroad: yom tov) ===
+    if (mode == AmidaMode.chazara) {
+      if (info.isInIsrael || info.isYomTov) {
+        insertions.add(AmidaInsertion.birkatKohanim);
+      }
+    }
+
+    return insertions;
+  }
+}
+
+enum AmidaStructure {
+  weekday,                    // 19 brachot
+  shabbat,                    // 7 brachot - Shabbat middle
+  yomTov,                     // 7 brachot - Yom Tov middle
+  musafShabbat,               // תכנת שבת
+  musafRoshChodesh,           // regular RC musaf
+  musafShabbatRoshChodesh,    // אתה יצרת (special!)
+  musafCholHaMoed,            // chol hamoed musaf
+  musafYomTov,                // yom tov musaf
+}
+
+enum AmidaInsertion {
+  // Bracha 1
+  zachrenu,              // זכרנו לחיים (עשי"ת)
+  // Bracha 2
+  mashivHaruach,         // משיב הרוח ומוריד הגשם
+  moridHatal,            // מוריד הטל
+  miKamocha,             // מי כמוך (עשי"ת)
+  // Bracha 3
+  hamelechHakadosh,      // המלך הקדוש (עשי"ת)
+  // Bracha 9
+  veteinTalUmatar,       // ותן טל ומטר
+  veteinBracha,          // ותן ברכה
+  // Bracha 11
+  hamelechHamishpat,     // המלך המשפט (עשי"ת)
+  // Bracha 16
+  aneinuIndividual,      // עננו (יחיד, בשמע קולנו)
+  // Between 7 and 8
+  aneinuChazzan,         // עננו (ש"ץ, ברכה בפני עצמה)
+  // Bracha 17
+  yaalehVyavo,           // יעלה ויבוא (ר"ח, חוה"מ)
+  // Bracha 18
+  alHanissim,            // על הניסים
+  ukhtov,                // וכתוב (עשי"ת)
+  modimDerabbanan,       // מודים דרבנן (חזרה)
+  // Last bracha
+  besefer,               // בספר חיים (עשי"ת)
+  // Chazara additions
+  birkatKohanim,         // ברכת כהנים
+}
