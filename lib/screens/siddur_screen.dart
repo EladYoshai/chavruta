@@ -340,10 +340,7 @@ class _SiddurScreenState extends State<SiddurScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => _SiddurTextScreen(
-              title: 'ספירת העומר',
-              ref: _getOmerRef(nusach),
-            ),
+            builder: (_) => _OmerTodayScreen(omerDay: dayInfo.omerDay),
           ),
         ),
         child: Container(
@@ -451,11 +448,21 @@ class _SiddurScreenState extends State<SiddurScreen> {
     final day = jewishCal.getJewishDayOfMonth();
     final dayOfWeek = now.weekday;
 
-    // Omer day calculation
+    // Omer day - shkia aware (after sunset = next day's count)
+    final geoLocation = GeoLocation.setLocation('Jerusalem', 31.7683, 35.2137, now);
+    final zmanimCal = ComplexZmanimCalendar.intGeoLocation(geoLocation);
+    final sunset = zmanimCal.getSunset();
+    final isAfterShkia = sunset != null && now.isAfter(sunset);
+
+    final omerDate = isAfterShkia
+        ? JewishCalendar.fromDateTime(now.add(const Duration(days: 1)))
+        : jewishCal;
+    final omerMonth = omerDate.getJewishMonth();
+    final omerDayOfMonth = omerDate.getJewishDayOfMonth();
     int omerDay = 0;
-    if (month == 1 && day >= 16) omerDay = day - 15;
-    if (month == 2) omerDay = day + 15;
-    if (month == 3 && day <= 5) omerDay = day + 44;
+    if (omerMonth == 1 && omerDayOfMonth >= 16) omerDay = omerDayOfMonth - 15;
+    if (omerMonth == 2) omerDay = omerDayOfMonth + 15;
+    if (omerMonth == 3 && omerDayOfMonth <= 5) omerDay = omerDayOfMonth + 44;
     bool isOmer = omerDay > 0 && omerDay <= 49;
 
     if (dayOfWeek == 6) {
@@ -488,12 +495,6 @@ class _SiddurScreenState extends State<SiddurScreen> {
       default: return 'אשכנז';
     }
   }
-
-  String _getOmerRef(String nusach) => switch (nusach) {
-    'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Maariv,_Sefirat_HaOmer',
-    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Counting_of_the_Omer',
-    _ => 'Siddur_Sefard,_Weekday_Maariv,_Sefirat_HaOmer',
-  };
 
   String _getKiddushLevanaRef(String nusach) => switch (nusach) {
     'edot_hamizrach' => 'Siddur_Sefard,_Kiddush_Levanah', // fallback
@@ -871,6 +872,161 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
 // Siddur text screen - beautiful large font
 // ==========================================
 
+// ==========================================
+// Omer today - show only today's count
+// ==========================================
+
+class _OmerTodayScreen extends StatelessWidget {
+  final int omerDay;
+  const _OmerTodayScreen({required this.omerDay});
+
+  static const _omerHebrew = [
+    '', 'יום אחד', 'שני ימים', 'שלושה ימים', 'ארבעה ימים',
+    'חמישה ימים', 'שישה ימים', 'שבעה ימים שהם שבוע אחד',
+    'שמונה ימים שהם שבוע אחד ויום אחד',
+    'תשעה ימים שהם שבוע אחד ושני ימים',
+    'עשרה ימים שהם שבוע אחד ושלושה ימים',
+    'אחד עשר יום שהם שבוע אחד וארבעה ימים',
+    'שנים עשר יום שהם שבוע אחד וחמישה ימים',
+    'שלושה עשר יום שהם שבוע אחד ושישה ימים',
+    'ארבעה עשר יום שהם שני שבועות',
+    'חמישה עשר יום שהם שני שבועות ויום אחד',
+    'שישה עשר יום שהם שני שבועות ושני ימים',
+    'שבעה עשר יום שהם שני שבועות ושלושה ימים',
+    'שמונה עשר יום שהם שני שבועות וארבעה ימים',
+    'תשעה עשר יום שהם שני שבועות וחמישה ימים',
+    'עשרים יום שהם שני שבועות ושישה ימים',
+    'אחד ועשרים יום שהם שלושה שבועות',
+    'שנים ועשרים יום שהם שלושה שבועות ויום אחד',
+    'שלושה ועשרים יום שהם שלושה שבועות ושני ימים',
+    'ארבעה ועשרים יום שהם שלושה שבועות ושלושה ימים',
+    'חמישה ועשרים יום שהם שלושה שבועות וארבעה ימים',
+    'שישה ועשרים יום שהם שלושה שבועות וחמישה ימים',
+    'שבעה ועשרים יום שהם שלושה שבועות ושישה ימים',
+    'שמונה ועשרים יום שהם ארבעה שבועות',
+    'תשעה ועשרים יום שהם ארבעה שבועות ויום אחד',
+    'שלושים יום שהם ארבעה שבועות ושני ימים',
+    'אחד ושלושים יום שהם ארבעה שבועות ושלושה ימים',
+    'שנים ושלושים יום שהם ארבעה שבועות וארבעה ימים',
+    'שלושה ושלושים יום שהם ארבעה שבועות וחמישה ימים',
+    'ארבעה ושלושים יום שהם ארבעה שבועות ושישה ימים',
+    'חמישה ושלושים יום שהם חמישה שבועות',
+    'שישה ושלושים יום שהם חמישה שבועות ויום אחד',
+    'שבעה ושלושים יום שהם חמישה שבועות ושני ימים',
+    'שמונה ושלושים יום שהם חמישה שבועות ושלושה ימים',
+    'תשעה ושלושים יום שהם חמישה שבועות וארבעה ימים',
+    'ארבעים יום שהם חמישה שבועות וחמישה ימים',
+    'אחד וארבעים יום שהם חמישה שבועות ושישה ימים',
+    'שנים וארבעים יום שהם שישה שבועות',
+    'שלושה וארבעים יום שהם שישה שבועות ויום אחד',
+    'ארבעה וארבעים יום שהם שישה שבועות ושני ימים',
+    'חמישה וארבעים יום שהם שישה שבועות ושלושה ימים',
+    'שישה וארבעים יום שהם שישה שבועות וארבעה ימים',
+    'שבעה וארבעים יום שהם שישה שבועות וחמישה ימים',
+    'שמונה וארבעים יום שהם שישה שבועות ושישה ימים',
+    'תשעה וארבעים יום שהם שבעה שבועות',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final dayText = omerDay > 0 && omerDay < _omerHebrew.length
+        ? _omerHebrew[omerDay]
+        : '';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ספירת העומר'),
+        backgroundColor: const Color(0xFF1B5E20),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFDF5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🌾', style: TextStyle(fontSize: 50)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'ספירת העומר',
+                    style: GoogleFonts.rubik(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו, וְצִוָּנוּ עַל סְפִירַת הָעוֹמֶר.',
+                    style: TextStyle(
+                      fontFamily: 'serif',
+                      fontSize: 26,
+                      height: 2.0,
+                      color: Color(0xFF2C1810),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF1B5E20).withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'הַיּוֹם $dayText לָעוֹמֶר.',
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        height: 1.8,
+                        color: Color(0xFF1B5E20),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'הָרַחֲמָן הוּא יַחֲזִיר לָנוּ עֲבוֹדַת בֵּית הַמִּקְדָּשׁ לִמְקוֹמָהּ, בִּמְהֵרָה בְיָמֵינוּ אָמֵן סֶלָה.',
+                    style: const TextStyle(
+                      fontFamily: 'serif',
+                      fontSize: 22,
+                      height: 2.0,
+                      color: Color(0xFF2C1810),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SiddurTextScreen extends StatefulWidget {
   final String title;
   final String ref;
@@ -1064,26 +1220,40 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
 
   List<String> _nameLetters = [];
 
+  List<String> _nameOnlyLetters = [];
+  List<String> _neshmaLetters = [];
+
+  String _normalize(String char) => switch (char) {
+    'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
+    _ => char,
+  };
+
   void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    // Collect unique letters from name + נשמה
-    final allChars = '$name נשמה'.split('').where((c) => c.trim().isNotEmpty);
-    final letters = <String>[];
-    for (final char in allChars) {
-      // Normalize sofit letters
-      final normalized = switch (char) {
-        'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
-        _ => char,
-      };
-      if (_letterToVerseStart.containsKey(normalized) && !letters.contains(normalized)) {
-        letters.add(normalized);
+    // Name letters (unique per name)
+    final nameLetters = <String>[];
+    for (final char in name.split('')) {
+      final n = _normalize(char);
+      if (_letterToVerseStart.containsKey(n) && !nameLetters.contains(n)) {
+        nameLetters.add(n);
+      }
+    }
+
+    // נשמה letters - always separate, always all 4
+    final neshmaLetters = <String>[];
+    for (final char in 'נשמה'.split('')) {
+      final n = _normalize(char);
+      if (_letterToVerseStart.containsKey(n) && !neshmaLetters.contains(n)) {
+        neshmaLetters.add(n);
       }
     }
 
     setState(() {
-      _nameLetters = letters;
+      _nameOnlyLetters = nameLetters;
+      _neshmaLetters = neshmaLetters;
+      _nameLetters = [...nameLetters, ...neshmaLetters];
       _displayName = name;
     });
     _loadSections();
@@ -1093,38 +1263,49 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     setState(() { _isLoading = true; _loadedText = []; });
 
     final texts = <String>[];
-    for (final letter in _nameLetters) {
-      final startVerse = _letterToVerseStart[letter]!;
-      final endVerse = startVerse + 7;
-      final ref = 'Psalms.119.$startVerse-$endVerse';
 
-      texts.add('--- תהילים קי"ט - אות $letter ---');
+    // Name letters section
+    texts.add('--- אותיות שם הנפטר/ת: $_displayName ---');
+    for (final letter in _nameOnlyLetters) {
+      await _loadLetterSection(texts, letter);
+    }
 
-      try {
-        final data = await _sefaria.getText(ref);
-        final versions = data['versions'] as List?;
-        if (versions != null) {
-          for (final version in versions) {
-            if (version['actualLanguage'] == 'he' && version['text'] != null) {
-              final text = version['text'];
-              if (text is List) {
-                for (final item in text) {
-                  if (item is String && item.isNotEmpty) texts.add(item);
-                  if (item is List) {
-                    for (final sub in item) {
-                      if (sub is String && sub.isNotEmpty) texts.add(sub);
-                    }
-                  }
-                }
-              }
-              break;
-            }
-          }
-        }
-      } catch (_) {}
+    // נשמה letters section
+    texts.add('--- אותיות נשמה: נ, ש, מ, ה ---');
+    for (final letter in _neshmaLetters) {
+      await _loadLetterSection(texts, letter);
     }
 
     if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
+  }
+
+  Future<void> _loadLetterSection(List<String> texts, String letter) async {
+    final startVerse = _letterToVerseStart[letter]!;
+    final endVerse = startVerse + 7;
+    final ref = 'Psalms.119.$startVerse-$endVerse';
+    texts.add('--- אות $letter ---');
+    try {
+      final data = await _sefaria.getText(ref);
+      final versions = data['versions'] as List?;
+      if (versions != null) {
+        for (final version in versions) {
+          if (version['actualLanguage'] == 'he' && version['text'] != null) {
+            final text = version['text'];
+            if (text is List) {
+              for (final item in text) {
+                if (item is String && item.isNotEmpty) texts.add(item);
+                if (item is List) {
+                  for (final sub in item) {
+                    if (sub is String && sub.isNotEmpty) texts.add(sub);
+                  }
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -1193,7 +1374,10 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1B5E20))),
-                    Text('אותיות: ${_nameLetters.join(", ")} + נ,ש,מ,ה',
+                    Text('אותיות השם: ${_nameOnlyLetters.join(", ")}',
+                        style: GoogleFonts.rubik(
+                            fontSize: 13, color: Colors.grey.shade600)),
+                    Text('אותיות נשמה: ${_neshmaLetters.join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
