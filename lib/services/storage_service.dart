@@ -56,6 +56,13 @@ class StorageService {
         'gemara': false,
       };
 
+      // Reset daily tracker
+      if (progress.lastTrackerDate != today) {
+        progress.dailyTracker.updateAll((key, value) => false);
+        progress.lastTrackerDate = today;
+        progress.rebuildTracker();
+      }
+
       await prefs.setString(_lastResetKey, today);
       await saveProgress(progress);
     }

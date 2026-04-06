@@ -145,6 +145,37 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Toggle a daily tracker target and award 5 zuzim if checked
+  Future<void> toggleDailyTracker(String target) async {
+    final wasChecked = _progress.dailyTracker[target] ?? false;
+    _progress.dailyTracker[target] = !wasChecked;
+    if (!wasChecked) {
+      _progress.zuzim += 5;
+    } else {
+      _progress.zuzim = (_progress.zuzim - 5).clamp(0, _progress.zuzim);
+    }
+    await _storage.saveProgress(_progress);
+    notifyListeners();
+  }
+
+  /// Add a custom daily target
+  Future<void> addCustomTarget(String name) async {
+    if (name.trim().isEmpty) return;
+    if (_progress.customTargets.contains(name)) return;
+    _progress.customTargets.add(name);
+    _progress.dailyTracker[name] = false;
+    await _storage.saveProgress(_progress);
+    notifyListeners();
+  }
+
+  /// Remove a custom daily target
+  Future<void> removeCustomTarget(String name) async {
+    _progress.customTargets.remove(name);
+    _progress.dailyTracker.remove(name);
+    await _storage.saveProgress(_progress);
+    notifyListeners();
+  }
+
   /// Record that user just ate meat - starts the timer
   Future<void> eatMeat() async {
     _progress.lastMeatTime = DateTime.now().toIso8601String();

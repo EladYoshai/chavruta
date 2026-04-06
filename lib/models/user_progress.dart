@@ -47,6 +47,11 @@ class UserProgress {
   double meatDairyHours; // hours to wait (1, 3, 4, 5.5, 6)
   String? lastMeatTime; // ISO datetime when user last ate meat
 
+  // Daily tracker (מעקב יומי)
+  Map<String, bool> dailyTracker; // target key -> checked today
+  List<String> customTargets; // user-added custom target names
+  String? lastTrackerDate; // ISO date of last tracker reset
+
   // Shop & Achievements
   List<String> purchasedAvatars;
   String activeAvatar; // emoji or ID
@@ -83,6 +88,9 @@ class UserProgress {
     this.candleLightingEnabled = false,
     this.meatDairyHours = 6.0,
     this.lastMeatTime,
+    Map<String, bool>? dailyTracker,
+    List<String>? customTargets,
+    this.lastTrackerDate,
     List<String>? purchasedAvatars,
     this.activeAvatar = '',
     List<String>? purchasedBackgrounds,
@@ -104,10 +112,41 @@ class UserProgress {
               'pirkei_avot': false,
             },
         reminderDays = reminderDays ?? [0, 1, 2, 3, 4], // Sun-Thu default
+        dailyTracker = dailyTracker ?? _defaultDailyTracker(),
+        customTargets = customTargets ?? [],
         purchasedAvatars = purchasedAvatars ?? [],
         purchasedBackgrounds = purchasedBackgrounds ?? [],
         purchasedTitles = purchasedTitles ?? [],
         earnedBadges = earnedBadges ?? [];
+
+  static const List<String> defaultTrackerTargets = [
+    'התפללתי שלוש תפילות',
+    'התפללתי במניין',
+    'הגעתי בזמן לתפילה',
+    'כיוונתי בתפילה',
+    'קבעתי עיתים לתורה',
+  ];
+
+  static Map<String, bool> _defaultDailyTracker() {
+    final map = <String, bool>{};
+    for (final t in defaultTrackerTargets) {
+      map[t] = false;
+    }
+    return map;
+  }
+
+  /// Rebuild tracker map with all targets (default + custom), preserving today's checks
+  void rebuildTracker() {
+    final allTargets = [...defaultTrackerTargets, ...customTargets];
+    final newMap = <String, bool>{};
+    for (final t in allTargets) {
+      newMap[t] = dailyTracker[t] ?? false;
+    }
+    dailyTracker = newMap;
+  }
+
+  int get dailyTrackerChecked => dailyTracker.values.where((v) => v).length;
+  int get dailyTrackerTotal => dailyTracker.length;
 
   bool get hasProfile => userName.isNotEmpty;
   bool get isFemale => gender == 'נקבה';
@@ -193,6 +232,9 @@ class UserProgress {
         'candleLightingEnabled': candleLightingEnabled,
         'meatDairyHours': meatDairyHours,
         'lastMeatTime': lastMeatTime,
+        'dailyTracker': dailyTracker,
+        'customTargets': customTargets,
+        'lastTrackerDate': lastTrackerDate,
         'purchasedAvatars': purchasedAvatars,
         'activeAvatar': activeAvatar,
         'purchasedBackgrounds': purchasedBackgrounds,
@@ -236,6 +278,13 @@ class UserProgress {
         candleLightingEnabled: json['candleLightingEnabled'] ?? false,
         meatDairyHours: (json['meatDairyHours'] ?? 6).toDouble(),
         lastMeatTime: json['lastMeatTime'],
+        dailyTracker: json['dailyTracker'] != null
+            ? Map<String, bool>.from(json['dailyTracker'])
+            : null,
+        customTargets: json['customTargets'] != null
+            ? List<String>.from(json['customTargets'])
+            : null,
+        lastTrackerDate: json['lastTrackerDate'],
         purchasedAvatars: json['purchasedAvatars'] != null
             ? List<String>.from(json['purchasedAvatars'])
             : null,

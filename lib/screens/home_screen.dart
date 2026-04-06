@@ -21,6 +21,7 @@ import 'shop_screen.dart';
 import 'siddur_screen.dart';
 import 'women_screen.dart';
 import 'siyum_yahrzeit_screen.dart';
+import 'daily_tracker_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -645,6 +646,98 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Daily tracker (מעקב יומי) card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DailyTrackerScreen(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF00838F).withValues(alpha: 0.1),
+                              const Color(0xFF00838F).withValues(alpha: 0.04),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF00838F).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Row(
+                            children: [
+                              const Text('📋', style: TextStyle(fontSize: 22)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'מעקב יומי',
+                                      style: GoogleFonts.rubik(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.darkBrown,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${progress.dailyTrackerChecked}/${progress.dailyTrackerTotal} יעדים הושלמו',
+                                      style: GoogleFonts.rubik(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Mini progress
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      value: progress.dailyTrackerTotal > 0
+                                          ? progress.dailyTrackerChecked /
+                                              progress.dailyTrackerTotal
+                                          : 0,
+                                      strokeWidth: 4,
+                                      backgroundColor: AppColors.parchment,
+                                      color: progress.dailyTrackerChecked ==
+                                              progress.dailyTrackerTotal
+                                          ? AppColors.success
+                                          : const Color(0xFF00838F),
+                                    ),
+                                    Text(
+                                      '${progress.dailyTrackerChecked}',
+                                      style: GoogleFonts.rubik(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF00838F),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
