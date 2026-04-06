@@ -509,10 +509,9 @@ class _SiddurScreenState extends State<SiddurScreen> {
     _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon',
   };
 
-  String _getMeeinShaloshRef(String nusach) => switch (nusach) {
-    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Al_Hamihya',
-    _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon', // includes me'ein shalosh
-  };
+  // Edot HaMizrach has a clean standalone me'ein shalosh ref; use for all nusachot
+  String _getMeeinShaloshRef(String nusach) =>
+    'Siddur_Edot_HaMizrach,_Al_Hamihya';
 
   // Ashkenaz has a clean standalone Asher Yatzar ref; others don't, so use it for all
   String _getAsherYatzarRef(String nusach) =>
