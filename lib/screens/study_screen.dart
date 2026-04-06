@@ -63,6 +63,8 @@ class _StudyScreenState extends State<StudyScreen> {
           await _loadShmiratHalashon();
         case StudySectionType.pirkeiAvot:
           await _loadPirkeiAvot();
+        case StudySectionType.penineiHalacha:
+          await _loadPenineiHalacha();
         case StudySectionType.gemara:
           await _loadGemara(overrideRef: widget.initialRef);
       }
@@ -391,6 +393,62 @@ class _StudyScreenState extends State<StudyScreen> {
         segments: text,
         isBold: false,
         labelColor: const Color(0xFF4E342E),
+      ),
+    ];
+  }
+
+  // Peninei Halacha volumes with chapter counts
+  static const _penineiVolumes = [
+    {'ref': 'Peninei_Halakhah,_Berakhot', 'name': 'ברכות', 'chapters': 17},
+    {'ref': 'Peninei_Halakhah,_Prayer', 'name': 'תפילה', 'chapters': 27},
+    {'ref': 'Peninei_Halakhah,_Shabbat', 'name': 'שבת', 'chapters': 30},
+    {'ref': 'Peninei_Halakhah,_Pesach', 'name': 'פסח', 'chapters': 16},
+    {'ref': 'Peninei_Halakhah,_Kashrut', 'name': 'כשרות', 'chapters': 37},
+    {'ref': 'Peninei_Halakhah,_Festivals', 'name': 'מועדים', 'chapters': 13},
+    {'ref': 'Peninei_Halakhah,_Zemanim', 'name': 'זמנים', 'chapters': 15},
+    {'ref': 'Peninei_Halakhah,_Sukkot', 'name': 'סוכות', 'chapters': 8},
+    {'ref': 'Peninei_Halakhah,_Family', 'name': 'משפחה', 'chapters': 10},
+    {'ref': 'Peninei_Halakhah,_Women%27s_Prayer', 'name': 'תפילת נשים', 'chapters': 24},
+  ];
+
+  Future<void> _loadPenineiHalacha() async {
+    // Cycle through volumes and chapters based on day of year
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
+
+    // Calculate total chapters across all volumes
+    int totalChapters = 0;
+    for (final v in _penineiVolumes) {
+      totalChapters += v['chapters'] as int;
+    }
+
+    final dayIndex = dayOfYear % totalChapters;
+    int cumulative = 0;
+    String volumeRef = _penineiVolumes[0]['ref'] as String;
+    String volumeName = _penineiVolumes[0]['name'] as String;
+    int chapter = 1;
+
+    for (final v in _penineiVolumes) {
+      final chapters = v['chapters'] as int;
+      if (cumulative + chapters > dayIndex) {
+        volumeRef = v['ref'] as String;
+        volumeName = v['name'] as String;
+        chapter = dayIndex - cumulative + 1;
+        break;
+      }
+      cumulative += chapters;
+    }
+
+    final ref = '$volumeRef.$chapter';
+    final data = await _sefaria.getText(ref);
+    _hebrewRef = data['heRef']?.toString() ?? 'פניני הלכה - $volumeName פרק $chapter';
+    final text = _extractHebrewText(data);
+
+    _blocks = [
+      TextBlock(
+        label: '💎 פניני הלכה - $volumeName',
+        segments: text,
+        isBold: false,
+        labelColor: const Color(0xFF7B1FA2),
       ),
     ];
   }

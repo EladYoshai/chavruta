@@ -11,6 +11,7 @@ enum StudySectionType {
   rambam,
   shmiratHalashon,
   pirkeiAvot,
+  penineiHalacha,
 }
 
 class StudySection {
@@ -113,6 +114,15 @@ class StudySection {
           color: const Color(0xFF4E342E),
           zuzimReward: 10,
           key: 'pirkei_avot',
+        ),
+        StudySection(
+          type: StudySectionType.penineiHalacha,
+          title: 'פניני הלכה',
+          subtitle: 'הרב אליעזר מלמד - הלכה יומית',
+          icon: Icons.diamond,
+          color: const Color(0xFF7B1FA2),
+          zuzimReward: 10,
+          key: 'peninei_halacha',
         ),
       ];
 }
