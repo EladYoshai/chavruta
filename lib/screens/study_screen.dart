@@ -198,21 +198,17 @@ class _StudyScreenState extends State<StudyScreen> {
   }
 
   Future<void> _loadHalacha() async {
-    final isSefardi = context.read<AppState>().progress.isSefardi;
     final calendar = await _sefaria.getCalendarInfo();
 
     if (calendar.halachaYomitRef.isNotEmpty) {
       final texts = await _sefaria.getHalachaYomit(
         calendar.halachaYomitRef,
-        useSefardi: isSefardi,
       );
       _hebrewRef = (texts['heRef']?.isNotEmpty == true)
           ? texts['heRef']!.first
           : 'הלכה יומית';
 
-      final commentaryLabel = isSefardi
-          ? '📘 כף החיים - ביאור והסבר'
-          : '📘 משנה ברורה - ביאור והסבר';
+      const commentaryLabel = '📘 משנה ברורה - ביאור והסבר';
 
       _blocks = [
         TextBlock(
@@ -230,10 +226,8 @@ class _StudyScreenState extends State<StudyScreen> {
           ),
       ];
     } else {
-      final fallbackRef = isSefardi
-          ? 'Kaf_HaChayim_on_Shulchan_Arukh,_Orach_Chayim.1'
-          : 'Mishnah_Berurah.1';
-      final fallbackLabel = isSefardi ? 'כף החיים' : 'משנה ברורה';
+      const fallbackRef = 'Mishnah_Berurah.1';
+      const fallbackLabel = 'משנה ברורה';
       final data = await _sefaria.getText(fallbackRef);
       _hebrewRef = data['heRef']?.toString() ?? fallbackLabel;
       _blocks = [
