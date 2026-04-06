@@ -197,6 +197,13 @@ class _StudyScreenState extends State<StudyScreen> {
     }
   }
 
+  static const _hebrewSeifLetters = [
+    '', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט',
+    'י', 'יא', 'יב', 'יג', 'יד', 'טו', 'טז', 'יז', 'יח', 'יט',
+    'כ', 'כא', 'כב', 'כג', 'כד', 'כה', 'כו', 'כז', 'כח', 'כט',
+    'ל', 'לא', 'לב', 'לג', 'לד', 'לה', 'לו', 'לז', 'לח', 'לט', 'מ',
+  ];
+
   Future<void> _loadHalacha() async {
     final calendar = await _sefaria.getCalendarInfo();
 
@@ -208,18 +215,26 @@ class _StudyScreenState extends State<StudyScreen> {
           ? texts['heRef']!.first
           : 'הלכה יומית';
 
-      const commentaryLabel = '📘 משנה ברורה - ביאור והסבר';
+      // Add seif numbers to Shulchan Aruch segments
+      final saSegments = texts['shulchan_aruch'] ?? [];
+      final numberedSa = <String>[];
+      for (int i = 0; i < saSegments.length; i++) {
+        final seifLabel = (i + 1) < _hebrewSeifLetters.length
+            ? 'סעיף ${_hebrewSeifLetters[i + 1]}'
+            : 'סעיף ${i + 1}';
+        numberedSa.add('【$seifLabel】 ${saSegments[i]}');
+      }
 
       _blocks = [
         TextBlock(
-          label: '⚖️ שולחן ערוך',
-          segments: texts['shulchan_aruch'] ?? [],
+          label: '⚖️ שולחן ערוך - $_hebrewRef',
+          segments: numberedSa,
           isBold: true,
           labelColor: AppColors.success,
         ),
         if ((texts['commentary'] ?? []).isNotEmpty)
           TextBlock(
-            label: commentaryLabel,
+            label: '📘 משנה ברורה - ביאור והסבר',
             segments: texts['commentary'] ?? [],
             isBold: false,
             labelColor: const Color(0xFF2E7D32),
