@@ -28,6 +28,14 @@ class _StudyScreenState extends State<StudyScreen> {
   bool _showCompletionDialog = false;
   String? _currentGemaraRef; // Track current daf for navigation
 
+  // Structured gemara data for tabbed UI
+  Map<String, List<String>> _gemaraAmudA = {}; // gemara, rashi, tosafot, steinsaltz
+  Map<String, List<String>> _gemaraAmudB = {};
+  String? _dafSummary;
+  String? _dafDeepDive;
+  int _selectedAmudTab = 0; // 0=amud a, 1=amud b, 2=summary, 3=deep dive
+  int _selectedCommentaryTab = 0; // 0=gemara, 1=rashi, 2=tosafot, 3=steinsaltz
+
   @override
   void initState() {
     super.initState();
@@ -396,88 +404,38 @@ class _StudyScreenState extends State<StudyScreen> {
     }
 
     _currentGemaraRef = gemaraRef;
+    _selectedAmudTab = 0;
+    _selectedCommentaryTab = 0;
 
     // Get both amudim for the daf
     final amudim = _sefaria.getDafAmudim(gemaraRef);
 
-    _blocks = [];
+    _gemaraAmudA = {};
+    _gemaraAmudB = {};
+    _blocks = []; // Keep for non-gemara fallback
     String mainHeRef = '';
 
-    // Fetch each amud with all commentaries
     for (final amudRef in amudim) {
       final data = await _sefaria.getAmudFull(amudRef);
       final heRef = data['heRef']?.toString() ?? amudRef;
       if (mainHeRef.isEmpty) mainHeRef = heRef;
 
-      final gemara = data['gemara'] as List<String>? ?? [];
-      final rashi = data['rashi'] as List<String>? ?? [];
-      final tosafot = data['tosafot'] as List<String>? ?? [];
-      final steinsaltz = data['steinsaltz'] as List<String>? ?? [];
+      final amudData = <String, List<String>>{
+        'gemara': data['gemara'] as List<String>? ?? [],
+        'rashi': data['rashi'] as List<String>? ?? [],
+        'tosafot': data['tosafot'] as List<String>? ?? [],
+        'steinsaltz': data['steinsaltz'] as List<String>? ?? [],
+      };
 
-      final amudLabel = amudRef.endsWith('a') ? 'ע"א' : 'ע"ב';
-
-      if (gemara.isNotEmpty) {
-        // Gemara text for this amud
-        _blocks.add(TextBlock(
-          label: '📚 גמרא - $heRef ($amudLabel)',
-          segments: gemara,
-          isBold: true,
-          labelColor: const Color(0xFFC62828),
-        ));
-
-        // Rashi on this amud
-        if (rashi.isNotEmpty) {
-          _blocks.add(TextBlock(
-            label: '🔍 רש"י - $amudLabel',
-            segments: rashi,
-            isBold: false,
-            labelColor: const Color(0xFF1565C0),
-          ));
-        }
-
-        // Tosafot on this amud
-        if (tosafot.isNotEmpty) {
-          _blocks.add(TextBlock(
-            label: '💬 תוספות - $amudLabel',
-            segments: tosafot,
-            isBold: false,
-            labelColor: const Color(0xFF4E342E),
-          ));
-        }
-
-        // Steinsaltz on this amud
-        if (steinsaltz.isNotEmpty) {
-          _blocks.add(TextBlock(
-            label: '📝 ביאור שטיינזלץ - $amudLabel',
-            segments: steinsaltz,
-            isBold: false,
-            labelColor: const Color(0xFF00695C),
-          ));
-        }
+      if (amudRef.endsWith('a')) {
+        _gemaraAmudA = amudData;
+      } else {
+        _gemaraAmudB = amudData;
       }
     }
 
-    // Summary and deep dive at the END (covers the full daf)
-    final preGenSummary = DafSummaryService.getSummary(gemaraRef);
-    final preGenDeepDive = DafSummaryService.getDeepDive(gemaraRef);
-
-    if (preGenSummary != null && preGenSummary.isNotEmpty) {
-      _blocks.add(TextBlock(
-        label: '📝 סיכום הדף היומי',
-        segments: [preGenSummary],
-        isBold: false,
-        labelColor: const Color(0xFF006064),
-      ));
-    }
-
-    if (preGenDeepDive != null && preGenDeepDive.isNotEmpty) {
-      _blocks.add(TextBlock(
-        label: '💎 הרחבות - ביאור הראשונים בשפה פשוטה',
-        segments: [preGenDeepDive],
-        isBold: false,
-        labelColor: const Color(0xFF4E342E),
-      ));
-    }
+    _dafSummary = DafSummaryService.getSummary(gemaraRef);
+    _dafDeepDive = DafSummaryService.getDeepDive(gemaraRef);
 
     _hebrewRef = mainHeRef;
   }
@@ -710,13 +668,15 @@ class _StudyScreenState extends State<StudyScreen> {
                 ),
               ),
             Expanded(
-              child: TorahTextViewer(
-                title: widget.section.title,
-                hebrewRef: _hebrewRef,
-                blocks: _blocks,
-                isLoading: _isLoading,
-                errorMessage: _errorMessage,
-              ),
+              child: widget.section.type == StudySectionType.gemara
+                  ? _buildGemaraTabView()
+                  : TorahTextViewer(
+                      title: widget.section.title,
+                      hebrewRef: _hebrewRef,
+                      blocks: _blocks,
+                      isLoading: _isLoading,
+                      errorMessage: _errorMessage,
+                    ),
             ),
             const SizedBox(height: 16),
             if (!_isLoading && _errorMessage == null && !_showCompletionDialog)
@@ -747,4 +707,279 @@ class _StudyScreenState extends State<StudyScreen> {
       ),
     );
   }
+
+  // ==========================================
+  // Gemara tabbed UI
+  // ==========================================
+
+  Widget _buildGemaraTabView() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xFFC62828)),
+            SizedBox(height: 16),
+            Text('...טוען דף יומי'),
+          ],
+        ),
+      );
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, textAlign: TextAlign.center),
+          ],
+        ),
+      );
+    }
+
+    // Build top-level tabs
+    final topTabs = <_GemaraTab>[
+      if (_gemaraAmudA.isNotEmpty && (_gemaraAmudA['gemara']?.isNotEmpty ?? false))
+        _GemaraTab('עמוד א\'', const Color(0xFFC62828)),
+      if (_gemaraAmudB.isNotEmpty && (_gemaraAmudB['gemara']?.isNotEmpty ?? false))
+        _GemaraTab('עמוד ב\'', const Color(0xFF6A1B9A)),
+      if (_dafSummary != null && _dafSummary!.isNotEmpty)
+        _GemaraTab('סיכום הדף', const Color(0xFF006064)),
+      if (_dafDeepDive != null && _dafDeepDive!.isNotEmpty)
+        _GemaraTab('הרחבות', const Color(0xFF4E342E)),
+    ];
+
+    if (topTabs.isEmpty) {
+      return const Center(child: Text('אין תוכן זמין'));
+    }
+
+    final safeTab = _selectedAmudTab.clamp(0, topTabs.length - 1);
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        children: [
+          // Title
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.parchment,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'דף יומי',
+                  style: GoogleFonts.rubik(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepBlue,
+                  ),
+                ),
+                if (_hebrewRef.isNotEmpty)
+                  Text(
+                    _hebrewRef,
+                    style: GoogleFonts.rubik(
+                      fontSize: 14,
+                      color: AppColors.darkBrown.withValues(alpha: 0.7),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Top-level tab bar: עמוד א | עמוד ב | סיכום | הרחבות
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(topTabs.length, (i) {
+                final tab = topTabs[i];
+                final isSelected = safeTab == i;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedAmudTab = i;
+                      _selectedCommentaryTab = 0;
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? tab.color
+                            : tab.color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? tab.color
+                              : tab.color.withValues(alpha: 0.3),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        tab.label,
+                        style: GoogleFonts.rubik(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? Colors.white : tab.color,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Content area
+          Expanded(
+            child: _buildGemaraTabContent(topTabs, safeTab),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGemaraTabContent(List<_GemaraTab> tabs, int selectedTab) {
+    final tab = tabs[selectedTab];
+
+    // Summary tab
+    if (tab.label == 'סיכום הדף') {
+      return _buildTextContent([_dafSummary!], false, const Color(0xFF006064));
+    }
+    // Deep dive tab
+    if (tab.label == 'הרחבות') {
+      return _buildTextContent([_dafDeepDive!], false, const Color(0xFF4E342E));
+    }
+
+    // Amud tab - show commentary sub-tabs
+    final amudData = tab.label.contains('א') ? _gemaraAmudA : _gemaraAmudB;
+
+    final commentaries = <_CommentaryTab>[
+      if (amudData['gemara']?.isNotEmpty ?? false)
+        _CommentaryTab('📚 גמרא', 'gemara', const Color(0xFFC62828)),
+      if (amudData['rashi']?.isNotEmpty ?? false)
+        _CommentaryTab('🔍 רש"י', 'rashi', const Color(0xFF1565C0)),
+      if (amudData['tosafot']?.isNotEmpty ?? false)
+        _CommentaryTab('💬 תוספות', 'tosafot', const Color(0xFF4E342E)),
+      if (amudData['steinsaltz']?.isNotEmpty ?? false)
+        _CommentaryTab('📝 שטיינזלץ', 'steinsaltz', const Color(0xFF00695C)),
+    ];
+
+    if (commentaries.isEmpty) {
+      return const Center(child: Text('אין תוכן זמין'));
+    }
+
+    final safeComm = _selectedCommentaryTab.clamp(0, commentaries.length - 1);
+    final selectedComm = commentaries[safeComm];
+    final text = amudData[selectedComm.key] ?? [];
+
+    return Column(
+      children: [
+        // Commentary sub-tabs
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(commentaries.length, (i) {
+              final comm = commentaries[i];
+              final isSelected = safeComm == i;
+              return Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedCommentaryTab = i),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? comm.color.withValues(alpha: 0.15)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? comm.color
+                            : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      comm.label,
+                      style: GoogleFonts.rubik(
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isSelected ? comm.color : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _buildTextContent(
+            text,
+            selectedComm.key == 'gemara',
+            selectedComm.color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextContent(List<String> segments, bool isBold, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: 0.3),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: segments.map((segment) {
+            final clean = TorahTextViewer.stripHtml(segment);
+            if (clean.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                clean,
+                style: GoogleFonts.rubik(
+                  fontSize: isBold ? 22 : 20,
+                  fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+                  height: 2.0,
+                  color: AppColors.darkBrown,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _GemaraTab {
+  final String label;
+  final Color color;
+  const _GemaraTab(this.label, this.color);
+}
+
+class _CommentaryTab {
+  final String label;
+  final String key;
+  final Color color;
+  const _CommentaryTab(this.label, this.key, this.color);
 }
