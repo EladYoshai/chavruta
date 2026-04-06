@@ -1596,7 +1596,7 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     'ג': ('Mishnah_Peah.5.1', 'פאה ה:א - "גדיש"'),               // גדיש
     'ד': ('Mishnah_Sanhedrin.1.1', 'סנהדרין א:א - "דיני"'),       // דיני
     'ה': ('Mishnah_Kilayim.1.1', 'כלאים א:א - "החטים"'),          // החטים
-    'ו': ('Mishnah_Berakhot.1.1', 'ברכות א:א - (ו)'),             // no mishnah starts with ו
+    'ו': ('Mishnah_Berakhot.1.1', 'ברכות א:א (אין משנה המתחילה בו\')'),
     'ז': ('Mishnah_Berakhot.3.6', 'ברכות ג:ו - "זב"'),            // זב
     'ח': ('Mishnah_Terumot.1.1', 'תרומות א:א - "חמשה"'),          // חמשה
     'ט': ('Mishnah_Shabbat.4.2', 'שבת ד:ב - "טומנין"'),           // טומנין
