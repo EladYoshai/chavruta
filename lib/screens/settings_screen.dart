@@ -5,7 +5,6 @@ import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import '../app/app_state.dart';
 import '../services/notification_service.dart';
-import '../services/web_notification_stub.dart' if (dart.library.js_interop) '../services/web_notification_service.dart';
 import '../utils/constants.dart';
 import 'home_screen.dart' show omerHebrew;
 
@@ -92,12 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       candleLightingEnabled: _candleLightingEnabled,
     );
 
-    // Request web notification permission
-    if (kIsWeb && _notificationsEnabled) {
-      WebNotificationService.requestPermission();
-    }
-
-    // Update notification schedule (mobile)
+    // Update notification schedule (mobile only)
     if (!kIsWeb) {
       if (_notificationsEnabled) {
         NotificationService.scheduleDailyReminder(
