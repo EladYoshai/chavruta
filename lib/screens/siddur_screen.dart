@@ -514,11 +514,9 @@ class _SiddurScreenState extends State<SiddurScreen> {
     _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon', // includes me'ein shalosh
   };
 
-  String _getAsherYatzarRef(String nusach) => switch (nusach) {
-    'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar',
-    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Preparatory_Prayers,_Morning_Blessings',
-    _ => 'Siddur_Sefard,_Weekday_Shacharit,_Asher_Yatzar',
-  };
+  // Ashkenaz has a clean standalone Asher Yatzar ref; others don't, so use it for all
+  String _getAsherYatzarRef(String nusach) =>
+    'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar';
 
   String _getShevaBrachotRef(String nusach) => switch (nusach) {
     'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Sheva_Berachot',
@@ -1570,91 +1568,42 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
   final _nameController = TextEditingController();
   final SefariaService _sefaria = SefariaService();
   List<String> _loadedText = [];
-  List<String> _selectedMasechetot = [];
   bool _isLoading = false;
   String _displayName = '';
 
-  // Map Hebrew letters to Mishnah masechetot that start with that letter
-  static const _letterToMasechet = {
-    'א': ['Mishnah_Avot', 'Mishnah_Eduyot'],
-    'ב': ['Mishnah_Berakhot', 'Mishnah_Bikkurim', 'Mishnah_Bava_Kamma'],
-    'ג': ['Mishnah_Gittin'],
-    'ד': ['Mishnah_Demai'],
-    'ה': ['Mishnah_Horayot'],
-    'ו': [],
-    'ז': ['Mishnah_Zevachim'],
-    'ח': ['Mishnah_Chullin', 'Mishnah_Chagigah'],
-    'ט': ['Mishnah_Tevul_Yom', 'Mishnah_Tahorot'],
-    'י': ['Mishnah_Yevamot', 'Mishnah_Yoma'],
-    'כ': ['Mishnah_Ketubot', 'Mishnah_Kelim', 'Mishnah_Keritot'],
-    'ך': ['Mishnah_Ketubot'],
-    'ל': [],
-    'מ': ['Mishnah_Megillah', 'Mishnah_Makkot', 'Mishnah_Menachot', 'Mishnah_Mikvaot'],
-    'ם': ['Mishnah_Megillah'],
-    'נ': ['Mishnah_Nazir', 'Mishnah_Nedarim', 'Mishnah_Niddah', 'Mishnah_Negaim'],
-    'ן': ['Mishnah_Nazir'],
-    'ס': ['Mishnah_Sanhedrin', 'Mishnah_Sukkah', 'Mishnah_Sotah'],
-    'ע': ['Mishnah_Avodah_Zarah', 'Mishnah_Arakhin', 'Mishnah_Eruvin', 'Mishnah_Orlah'],
-    'פ': ['Mishnah_Pesachim', 'Mishnah_Peah', 'Mishnah_Parah'],
-    'ף': ['Mishnah_Pesachim'],
-    'צ': [],
-    'ק': ['Mishnah_Kiddushin'],
-    'ר': ['Mishnah_Rosh_Hashanah'],
-    'ש': ['Mishnah_Shabbat', 'Mishnah_Sheviit', 'Mishnah_Shekalim', 'Mishnah_Shevuot'],
-    'ת': ['Mishnah_Tamid', 'Mishnah_Terumot', 'Mishnah_Taanit'],
+  // Mishnayot whose TEXT starts with each Hebrew letter (standard azkara list)
+  static const _letterToMishna = {
+    'א': ('Mishnah_Peah.1.1', 'פאה א:א - "אלו דברים"'),          // אלו
+    'ב': ('Mishnah_Ketubot.1.1', 'כתובות א:א - "בתולה"'),        // בתולה
+    'ג': ('Mishnah_Peah.5.1', 'פאה ה:א - "גדיש"'),               // גדיש
+    'ד': ('Mishnah_Sanhedrin.1.1', 'סנהדרין א:א - "דיני"'),       // דיני
+    'ה': ('Mishnah_Kilayim.1.1', 'כלאים א:א - "החטים"'),          // החטים
+    'ו': ('Mishnah_Berakhot.1.1', 'ברכות א:א - (ו)'),             // no mishnah starts with ו
+    'ז': ('Mishnah_Berakhot.3.6', 'ברכות ג:ו - "זב"'),            // זב
+    'ח': ('Mishnah_Terumot.1.1', 'תרומות א:א - "חמשה"'),          // חמשה
+    'ט': ('Mishnah_Shabbat.4.2', 'שבת ד:ב - "טומנין"'),           // טומנין
+    'י': ('Mishnah_Shabbat.1.1', 'שבת א:א - "יציאות"'),           // יציאות
+    'כ': ('Mishnah_Makkot.1.1', 'מכות א:א - "כיצד"'),             // כיצד
+    'ך': ('Mishnah_Makkot.1.1', 'מכות א:א - "כיצד"'),
+    'ל': ('Mishnah_Peah.1.6', 'פאה א:ו - "לעולם"'),               // לעולם
+    'מ': ('Mishnah_Berakhot.1.1', 'ברכות א:א - "מאימתי"'),        // מאימתי
+    'ם': ('Mishnah_Berakhot.1.1', 'ברכות א:א - "מאימתי"'),
+    'נ': ('Mishnah_Berakhot.3.3', 'ברכות ג:ג - "נשים"'),          // נשים
+    'ן': ('Mishnah_Berakhot.3.3', 'ברכות ג:ג - "נשים"'),
+    'ס': ('Mishnah_Sukkah.1.1', 'סוכה א:א - "סוכה"'),             // סוכה
+    'ע': ('Mishnah_Sheviit.1.1', 'שביעית א:א - "עד"'),            // עד
+    'פ': ('Mishnah_Peah.4.4', 'פאה ד:ד - "פאה"'),                  // פאה
+    'ף': ('Mishnah_Peah.4.4', 'פאה ד:ד - "פאה"'),
+    'צ': ('Mishnah_Moed_Katan.1.4', 'מועד קטן א:ד - "צדין"'),     // צדין
+    'ץ': ('Mishnah_Moed_Katan.1.4', 'מועד קטן א:ד - "צדין"'),
+    'ק': ('Mishnah_Berakhot.3.2', 'ברכות ג:ב - "קברו"'),          // קברו
+    'ר': ('Mishnah_Parah.1.1', 'פרה א:א - "רבי"'),                // רבי
+    'ש': ('Mishnah_Yoma.1.1', 'יומא א:א - "שבעת"'),               // שבעת
+    'ת': ('Mishnah_Berakhot.4.1', 'ברכות ד:א - "תפלת"'),          // תפלת
   };
 
-  // Hebrew display names
-  static const _masechetNames = {
-    'Mishnah_Avot': 'אבות',
-    'Mishnah_Eduyot': 'עדויות',
-    'Mishnah_Berakhot': 'ברכות',
-    'Mishnah_Bikkurim': 'ביכורים',
-    'Mishnah_Bava_Kamma': 'בבא קמא',
-    'Mishnah_Gittin': 'גיטין',
-    'Mishnah_Demai': 'דמאי',
-    'Mishnah_Horayot': 'הוריות',
-    'Mishnah_Zevachim': 'זבחים',
-    'Mishnah_Chullin': 'חולין',
-    'Mishnah_Chagigah': 'חגיגה',
-    'Mishnah_Tevul_Yom': 'טבול יום',
-    'Mishnah_Tahorot': 'טהרות',
-    'Mishnah_Yevamot': 'יבמות',
-    'Mishnah_Yoma': 'יומא',
-    'Mishnah_Ketubot': 'כתובות',
-    'Mishnah_Kelim': 'כלים',
-    'Mishnah_Keritot': 'כריתות',
-    'Mishnah_Megillah': 'מגילה',
-    'Mishnah_Makkot': 'מכות',
-    'Mishnah_Menachot': 'מנחות',
-    'Mishnah_Mikvaot': 'מקוואות',
-    'Mishnah_Nazir': 'נזיר',
-    'Mishnah_Nedarim': 'נדרים',
-    'Mishnah_Niddah': 'נידה',
-    'Mishnah_Negaim': 'נגעים',
-    'Mishnah_Sanhedrin': 'סנהדרין',
-    'Mishnah_Sukkah': 'סוכה',
-    'Mishnah_Sotah': 'סוטה',
-    'Mishnah_Avodah_Zarah': 'עבודה זרה',
-    'Mishnah_Arakhin': 'ערכין',
-    'Mishnah_Eruvin': 'עירובין',
-    'Mishnah_Orlah': 'ערלה',
-    'Mishnah_Pesachim': 'פסחים',
-    'Mishnah_Peah': 'פאה',
-    'Mishnah_Parah': 'פרה',
-    'Mishnah_Kiddushin': 'קידושין',
-    'Mishnah_Rosh_Hashanah': 'ראש השנה',
-    'Mishnah_Shabbat': 'שבת',
-    'Mishnah_Sheviit': 'שביעית',
-    'Mishnah_Shekalim': 'שקלים',
-    'Mishnah_Shevuot': 'שבועות',
-    'Mishnah_Tamid': 'תמיד',
-    'Mishnah_Terumot': 'תרומות',
-    'Mishnah_Taanit': 'תענית',
-  };
-
-  List<(String, String)> _namePairs = []; // (letter, ref)
-  List<(String, String)> _neshamaPairs = [];
+  List<(String, String, String)> _nameMishnayot = []; // (letter, ref, desc)
+  List<(String, String, String)> _neshamaMishnayot = [];
 
   String _norm(String c) => switch (c) {
     'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ', _ => c,
@@ -1664,80 +1613,74 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    final namePairs = <(String, String)>[];
+    final nameMish = <(String, String, String)>[];
     final seen = <String>{};
     for (final char in name.split('')) {
       final n = _norm(char);
-      final list = _letterToMasechet[n];
-      if (list != null && list.isNotEmpty && !seen.contains(n)) {
+      final entry = _letterToMishna[n];
+      if (entry != null && !seen.contains(n)) {
         seen.add(n);
-        namePairs.add((n, list.first));
+        nameMish.add((n, entry.$1, entry.$2));
       }
     }
 
-    final neshamaPairs = <(String, String)>[];
+    final neshamaMish = <(String, String, String)>[];
     final seenN = <String>{};
     for (final char in 'נשמה'.split('')) {
       final n = _norm(char);
-      final list = _letterToMasechet[n];
-      if (list != null && list.isNotEmpty && !seenN.contains(n)) {
+      final entry = _letterToMishna[n];
+      if (entry != null && !seenN.contains(n)) {
         seenN.add(n);
-        neshamaPairs.add((n, list.first));
+        neshamaMish.add((n, entry.$1, entry.$2));
       }
     }
 
     setState(() {
-      _namePairs = namePairs;
-      _neshamaPairs = neshamaPairs;
-      _selectedMasechetot = [...namePairs.map((p) => p.$2), ...neshamaPairs.map((p) => p.$2)];
+      _nameMishnayot = nameMish;
+      _neshamaMishnayot = neshamaMish;
       _displayName = name;
     });
-    _loadMasechetot();
+    _loadMishnayot();
   }
 
-  Future<void> _loadMasechetot() async {
+  Future<void> _loadMishnayot() async {
     setState(() { _isLoading = true; _loadedText = []; });
-
     final texts = <String>[];
 
-    texts.add('--- אותיות שם הנפטר/ת: $_displayName ---');
-    for (final (letter, ref) in _namePairs) {
-      await _loadOneMasechet(texts, ref, letter);
+    texts.add('--- משניות לאותיות שם $_displayName ---');
+    for (final (letter, ref, desc) in _nameMishnayot) {
+      await _loadOneMishna(texts, letter, ref, desc);
     }
 
-    texts.add('--- אותיות נשמה: נ, ש, מ, ה ---');
-    for (final (letter, ref) in _neshamaPairs) {
-      await _loadOneMasechet(texts, ref, letter);
+    texts.add('--- משניות לאותיות נשמה ---');
+    for (final (letter, ref, desc) in _neshamaMishnayot) {
+      await _loadOneMishna(texts, letter, ref, desc);
     }
 
     if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
-  Future<void> _loadOneMasechet(List<String> texts, String ref, String letter) async {
-      final heName = _masechetNames[ref] ?? ref;
-      texts.add('--- אות $letter - משנה $heName פרק א ---');
-      try {
-        final data = await _sefaria.getText('$ref.1');
-        final versions = data['versions'] as List?;
-        if (versions != null) {
-          for (final version in versions) {
-            if (version['actualLanguage'] == 'he' && version['text'] != null) {
-              final text = version['text'];
-              if (text is List) {
-                for (final item in text) {
-                  if (item is String && item.isNotEmpty) texts.add(item);
-                  if (item is List) {
-                    for (final sub in item) {
-                      if (sub is String && sub.isNotEmpty) texts.add(sub);
-                    }
-                  }
-                }
+  Future<void> _loadOneMishna(List<String> texts, String letter, String ref, String desc) async {
+    texts.add('--- אות $letter - $desc ---');
+    try {
+      final data = await _sefaria.getText(ref);
+      final versions = data['versions'] as List?;
+      if (versions != null) {
+        for (final version in versions) {
+          if (version['actualLanguage'] == 'he' && version['text'] != null) {
+            final text = version['text'];
+            if (text is String && text.isNotEmpty) {
+              texts.add(text);
+            } else if (text is List) {
+              for (final item in text) {
+                if (item is String && item.isNotEmpty) texts.add(item);
               }
-              break;
             }
+            break;
           }
         }
-      } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   @override
@@ -1793,12 +1736,16 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
                       ),
                     ],
                   ),
-                  if (_selectedMasechetot.isNotEmpty) ...[
+                  if (_nameMishnayot.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text('משניות לעילוי נשמת $_displayName:',
                         style: GoogleFonts.rubik(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF1B5E20))),
                     Text(
-                      _selectedMasechetot.map((r) => _masechetNames[r] ?? r).join(', '),
+                      'אותיות השם: ${_nameMishnayot.map((m) => m.$1).join(", ")}',
+                      style: GoogleFonts.rubik(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                    Text(
+                      'אותיות נשמה: ${_neshamaMishnayot.map((m) => m.$1).join(", ")}',
                       style: GoogleFonts.rubik(fontSize: 13, color: Colors.grey.shade600),
                     ),
                   ],
