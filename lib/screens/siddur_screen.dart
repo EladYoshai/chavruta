@@ -273,11 +273,6 @@ class _SiddurScreenState extends State<SiddurScreen> {
                   ),
                 ),
               ),
-              Text(
-                '${category.items.length} תפילות',
-                style: GoogleFonts.rubik(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              const SizedBox(width: 8),
               const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
             ],
           ),
@@ -1209,20 +1204,19 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
   bool _isLoading = false;
   String _displayName = '';
 
-  // Tehillim 119: 22 sections of 8 verses, one per letter
-  // Letter -> start verse in Psalms 119
-  static const _letterToVerseStart = {
-    'א': 1, 'ב': 9, 'ג': 17, 'ד': 25, 'ה': 33, 'ו': 41, 'ז': 49, 'ח': 57,
-    'ט': 65, 'י': 73, 'כ': 81, 'ך': 81, 'ל': 89, 'מ': 97, 'ם': 97,
-    'נ': 105, 'ן': 105, 'ס': 113, 'ע': 121, 'פ': 129, 'ף': 129,
-    'צ': 137, 'ץ': 137, 'ק': 145, 'ר': 153, 'ש': 161, 'ת': 169,
+  // Gematria-based: letter value = Tehillim chapter number
+  // For values > 150: subtract 150 (ר=200→50, ש=300→150, ת=400→100)
+  static const _letterToChapter = {
+    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
+    'ט': 9, 'י': 10, 'כ': 20, 'ך': 20, 'ל': 30, 'מ': 40, 'ם': 40,
+    'נ': 50, 'ן': 50, 'ס': 60, 'ע': 70, 'פ': 80, 'ף': 80,
+    'צ': 90, 'ץ': 90, 'ק': 100, 'ר': 50, 'ש': 150, 'ת': 100,
   };
 
   List<String> _nameLetters = [];
 
   List<String> _nameOnlyLetters = [];
   List<String> _neshmaLetters = [];
-
   String _normalize(String char) => switch (char) {
     'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
     _ => char,
@@ -1232,20 +1226,18 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    // Name letters (unique per name)
     final nameLetters = <String>[];
     for (final char in name.split('')) {
       final n = _normalize(char);
-      if (_letterToVerseStart.containsKey(n) && !nameLetters.contains(n)) {
+      if (_letterToChapter.containsKey(n) && !nameLetters.contains(n)) {
         nameLetters.add(n);
       }
     }
 
-    // נשמה letters - always separate, always all 4
     final neshmaLetters = <String>[];
     for (final char in 'נשמה'.split('')) {
       final n = _normalize(char);
-      if (_letterToVerseStart.containsKey(n) && !neshmaLetters.contains(n)) {
+      if (_letterToChapter.containsKey(n) && !neshmaLetters.contains(n)) {
         neshmaLetters.add(n);
       }
     }
@@ -1264,28 +1256,27 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
 
     final texts = <String>[];
 
-    // Name letters section
-    texts.add('--- אותיות שם הנפטר/ת: $_displayName ---');
+    // Name letters - full Tehillim chapters by gematria
+    texts.add('--- תהילים לאותיות שם $_displayName ---');
     for (final letter in _nameOnlyLetters) {
-      await _loadLetterSection(texts, letter);
+      await _loadChapter(texts, letter);
     }
 
-    // נשמה letters section
-    texts.add('--- אותיות נשמה: נ, ש, מ, ה ---');
+    // נשמה letters - always separate
+    texts.add('--- תהילים לאותיות נשמה ---');
     for (final letter in _neshmaLetters) {
-      await _loadLetterSection(texts, letter);
+      await _loadChapter(texts, letter);
     }
 
     if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
-  Future<void> _loadLetterSection(List<String> texts, String letter) async {
-    final startVerse = _letterToVerseStart[letter]!;
-    final endVerse = startVerse + 7;
-    final ref = 'Psalms.119.$startVerse-$endVerse';
-    texts.add('--- אות $letter ---');
+  Future<void> _loadChapter(List<String> texts, String letter) async {
+    final chapter = _letterToChapter[letter];
+    if (chapter == null) return;
+    texts.add('--- אות $letter - פרק $chapter ---');
     try {
-      final data = await _sefaria.getText(ref);
+      final data = await _sefaria.getText('Psalms.$chapter');
       final versions = data['versions'] as List?;
       if (versions != null) {
         for (final version in versions) {
@@ -1369,15 +1360,15 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                   ),
                   if (_nameLetters.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text('תהילים קי"ט לעילוי נשמת $_displayName:',
+                    Text('תהילים לעילוי נשמת $_displayName:',
                         style: GoogleFonts.rubik(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF1B5E20))),
-                    Text('אותיות השם: ${_nameOnlyLetters.join(", ")}',
+                    Text('אותיות השם: ${_nameOnlyLetters.map((l) => '$l (פרק ${_letterToChapter[l]})').join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
-                    Text('אותיות נשמה: ${_neshmaLetters.join(", ")}',
+                    Text('אותיות נשמה: ${_neshmaLetters.map((l) => '$l (פרק ${_letterToChapter[l]})').join(", ")}',
                         style: GoogleFonts.rubik(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
@@ -1389,10 +1380,36 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
                   : _loadedText.isEmpty
-                      ? Center(
-                          child: Text('הכנס את שם הנפטר/ת לקבלת פרקי תהילים',
-                              style: GoogleFonts.rubik(
-                                  fontSize: 14, color: Colors.grey)))
+                      ? ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFDF5),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('נוסח לאזכרה',
+                                      style: GoogleFonts.rubik(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1B5E20)),
+                                      textAlign: TextAlign.center),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'אָנָּא ה\' אֱלֹקֵי הָרוּחוֹת לְכָל בָּשָׂר, יְהִי רָצוֹן מִלְּפָנֶיךָ שֶׁתְּהֵא נִשְׁמַת הַנִּפְטָר/ת צְרוּרָה בִּצְרוֹר הַחַיִּים. ה\' הוּא נַחֲלָתוֹ, וְיָנוּחַ בְּשָׁלוֹם עַל מִשְׁכָּבוֹ/ה. וְנֹאמַר אָמֵן.',
+                                    style: TextStyle(fontFamily: 'serif', fontSize: 24, height: 2.0, color: Color(0xFF2C1810)),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text('הכנס את שם הנפטר/ת למעלה לקבלת פרקי תהילים לפי אותיות השם',
+                                      style: GoogleFonts.rubik(fontSize: 14, color: Colors.grey),
+                                      textAlign: TextAlign.center),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
                       : ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
@@ -1629,26 +1646,45 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     'Mishnah_Taanit': 'תענית',
   };
 
+  List<String> _nameMasechetot = [];
+  List<String> _neshamaMasechetot = [];
+
+  String _norm(String c) => switch (c) {
+    'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ', _ => c,
+  };
+
   void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    // Get first masechet per letter (name + נשמה)
-    final allChars = '$name נשמה'.split('').where((c) => c.trim().isNotEmpty);
-    final masechetot = <String>{};
-    for (final char in allChars) {
-      final normalized = switch (char) {
-        'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ',
-        _ => char,
-      };
-      final list = _letterToMasechet[normalized];
-      if (list != null && list.isNotEmpty) {
-        masechetot.add(list.first); // First masechet for that letter
+    // Name letters
+    final nameM = <String>[];
+    final seen = <String>{};
+    for (final char in name.split('')) {
+      final n = _norm(char);
+      final list = _letterToMasechet[n];
+      if (list != null && list.isNotEmpty && !seen.contains(n)) {
+        seen.add(n);
+        nameM.add(list.first);
+      }
+    }
+
+    // נשמה letters - always separate
+    final neshM = <String>[];
+    final seenN = <String>{};
+    for (final char in 'נשמה'.split('')) {
+      final n = _norm(char);
+      final list = _letterToMasechet[n];
+      if (list != null && list.isNotEmpty && !seenN.contains(n)) {
+        seenN.add(n);
+        neshM.add(list.first);
       }
     }
 
     setState(() {
-      _selectedMasechetot = masechetot.toList();
+      _nameMasechetot = nameM;
+      _neshamaMasechetot = neshM;
+      _selectedMasechetot = [...nameM, ...neshM];
       _displayName = name;
     });
     _loadMasechetot();
@@ -1658,7 +1694,23 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     setState(() { _isLoading = true; _loadedText = []; });
 
     final texts = <String>[];
-    for (final ref in _selectedMasechetot) {
+
+    // Name masechetot
+    texts.add('--- אותיות שם הנפטר/ת: $_displayName ---');
+    for (final ref in _nameMasechetot) {
+      await _loadOneMasechet(texts, ref);
+    }
+
+    // נשמה masechetot
+    texts.add('--- אותיות נשמה: נ, ש, מ, ה ---');
+    for (final ref in _neshamaMasechetot) {
+      await _loadOneMasechet(texts, ref);
+    }
+
+    if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
+  }
+
+  Future<void> _loadOneMasechet(List<String> texts, String ref) async {
       final heName = _masechetNames[ref] ?? ref;
       texts.add('--- משנה $heName פרק א ---');
       try {
@@ -1683,9 +1735,6 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
           }
         }
       } catch (_) {}
-    }
-
-    if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
   @override
