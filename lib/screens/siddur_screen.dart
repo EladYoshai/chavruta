@@ -3,13 +3,39 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import '../app/app_state.dart';
+import '../data/siddur_structure.dart';
 import '../services/sefaria_service.dart';
 import '../utils/constants.dart';
 import '../widgets/torah_text_viewer.dart';
 
 /// Redesigned Siddur with context-aware categories and beautiful typography
-class SiddurScreen extends StatelessWidget {
+class SiddurScreen extends StatefulWidget {
   const SiddurScreen({super.key});
+
+  @override
+  State<SiddurScreen> createState() => _SiddurScreenState();
+}
+
+class _SiddurScreenState extends State<SiddurScreen> {
+  List<PrayerCategory> _mainCategories = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStructure();
+  }
+
+  Future<void> _loadStructure() async {
+    final nusach = context.read<AppState>().progress.nusach;
+    final cats = await SiddurStructure.loadCategories(nusach);
+    if (mounted) {
+      setState(() {
+        _mainCategories = cats;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,138 +70,165 @@ class SiddurScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Day info banner
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(dayInfo.emoji, style: const TextStyle(fontSize: 28)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      dayInfo.label,
-                      style: GoogleFonts.rubik(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1B5E20),
-                      ),
+                  CircularProgressIndicator(color: Color(0xFF1B5E20)),
+                  SizedBox(height: 16),
+                  Text('...טוען סידור'),
+                ],
+              ),
+            )
+          : Directionality(
+              textDirection: TextDirection.rtl,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Day info banner
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(dayInfo.emoji, style: const TextStyle(fontSize: 28)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            dayInfo.label,
+                            style: GoogleFonts.rubik(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1B5E20),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Main tefilot from Sefaria index (these work via tree-walking)
+                  _buildSectionHeader('תפילות'),
+                  ..._buildMainTefilot(context, dayInfo),
+
+                  // Omer - only during season, show today's count
+                  if (dayInfo.isOmerSeason) ...[
+                    _buildOmerCard(context, nusach, dayInfo),
+                  ],
+
+                  const SizedBox(height: 16),
+                  _buildSectionHeader('ברכות'),
+                  _buildSimpleCard(context, '🍞', 'ברכת המזון',
+                      'ברכה אחרי סעודה עם לחם', _getBirkatHamazonRef(nusach)),
+                  _buildSimpleCard(context, '🍎', 'ברכה מעין שלוש',
+                      'על המחיה / על הגפן / על העץ', _getMeeinShaloshRef(nusach)),
+                  _buildSimpleCard(context, '🚿', 'אשר יצר',
+                      'ברכת אשר יצר', _getAsherYatzarRef(nusach)),
+
+                  const SizedBox(height: 16),
+                  _buildSectionHeader('תפילות מיוחדות'),
+                  _buildSimpleCard(context, '🛏️', 'קריאת שמע על המיטה',
+                      'לפני השינה', _getBedtimeShemaRef(nusach)),
+                  _buildSimpleCard(context, '🌙', 'קידוש לבנה',
+                      'ברכת הלבנה', _getKiddushLevanaRef(nusach)),
+                  _buildSimpleCard(context, '🚗', 'תפילת הדרך',
+                      'לפני נסיעה', _getTefilatHaderechRef(nusach)),
+                  _buildAzkaraCard(context),
+
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-
-            // Main prayers
-            _buildSectionHeader('תפילות'),
-            _buildPrayerCard(
-              context, '🌅', 'שחרית', 'תפילת שחרית',
-              _getShacharitRefs(nusach, dayInfo),
-            ),
-            _buildPrayerCard(
-              context, '☀️', 'מנחה', 'תפילת מנחה',
-              _getMinchaRefs(nusach, dayInfo),
-            ),
-            _buildPrayerCard(
-              context, '🌙', 'ערבית', 'תפילת ערבית',
-              _getArvitRefs(nusach, dayInfo),
-            ),
-
-            // Seasonal
-            if (dayInfo.isOmerSeason) ...[
-              const SizedBox(height: 8),
-              _buildPrayerCard(
-                context, '🌾', 'ספירת העומר', 'נוסח ספירת העומר',
-                [_getOmerRef(nusach)],
-              ),
-            ],
-
-            _buildPrayerCard(
-              context, '🌙', 'קידוש לבנה', 'ברכת הלבנה',
-              [_getKiddushLevanaRef(nusach)],
-            ),
-
-            const SizedBox(height: 16),
-            _buildSectionHeader('קריאת שמע'),
-            _buildPrayerCard(
-              context, '🛏️', 'קריאת שמע על המיטה', 'לפני השינה',
-              [_getBedtimeShemaRef(nusach)],
-            ),
-
-            const SizedBox(height: 16),
-            _buildSectionHeader('ברכות'),
-            _buildPrayerCard(
-              context, '🍞', 'ברכת המזון', 'ברכה אחרי סעודה עם לחם',
-              [_getBirkatHamazonRef(nusach)],
-            ),
-            _buildPrayerCard(
-              context, '🍎', 'ברכה מעין שלוש', 'על המחיה / על הגפן / על העץ',
-              [_getMeeinShaloshRef(nusach)],
-            ),
-            _buildPrayerCard(
-              context, '💧', 'בורא נפשות', 'ברכה אחרונה',
-              [_getBoreiNefashot(nusach)],
-            ),
-            _buildPrayerCard(
-              context, '🚿', 'אשר יצר', 'ברכת אשר יצר',
-              [_getAsherYatzarRef(nusach)],
-            ),
-
-            const SizedBox(height: 16),
-            _buildSectionHeader('תפילות מיוחדות'),
-            _buildPrayerCard(
-              context, '🚗', 'תפילת הדרך', 'לפני נסיעה',
-              [_getTefilatHaderechRef(nusach)],
-            ),
-            _buildAzkaraCard(context),
-
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: GoogleFonts.rubik(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppColors.darkBrown,
-        ),
-      ),
-    );
+  /// Build main tefilot cards from the loaded categories
+  List<Widget> _buildMainTefilot(BuildContext context, _DayInfo dayInfo) {
+    // Map category names to the ones we want to show
+    final showOrder = dayInfo.isShabbat
+        ? ['שחרית שבת', 'מוסף שבת', 'מנחה שבת', 'קבלת שבת', 'הבדלה']
+        : ['שחרית', 'מנחה', 'ערבית'];
+
+    final widgets = <Widget>[];
+    for (final name in showOrder) {
+      final cat = _mainCategories.where((c) => c.name == name).firstOrNull;
+      if (cat != null) {
+        widgets.add(_buildCategoryCard(context, cat));
+      }
+    }
+
+    // If no specific matches, show all main categories
+    if (widgets.isEmpty) {
+      for (final cat in _mainCategories) {
+        if (['שחרית', 'מנחה', 'ערבית', 'קבלת שבת', 'שחרית שבת',
+             'מוסף שבת', 'מנחה שבת'].contains(cat.name)) {
+          widgets.add(_buildCategoryCard(context, cat));
+        }
+      }
+    }
+    return widgets;
   }
 
-  Widget _buildPrayerCard(
-    BuildContext context,
-    String emoji,
-    String title,
-    String subtitle,
-    List<String> refs,
-  ) {
+  Widget _buildCategoryCard(BuildContext context, PrayerCategory category) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => SiddurPrayerScreen(
-              title: title,
-              refs: refs,
+            builder: (_) => _PrayerListScreen(category: category),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF1B5E20).withValues(alpha: 0.15),
             ),
+          ),
+          child: Row(
+            children: [
+              Text(category.icon, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  category.name,
+                  style: GoogleFonts.rubik(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.darkBrown,
+                  ),
+                ),
+              ),
+              Text(
+                '${category.items.length} תפילות',
+                style: GoogleFonts.rubik(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimpleCard(BuildContext context, String emoji, String title,
+      String subtitle, String ref) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => _SiddurTextScreen(title: title, ref: ref),
           ),
         ),
         child: Container(
@@ -195,26 +248,70 @@ class SiddurScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.rubik(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.darkBrown,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.rubik(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    Text(title,
+                        style: GoogleFonts.rubik(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkBrown)),
+                    Text(subtitle,
+                        style: GoogleFonts.rubik(
+                            fontSize: 12, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_back_ios,
-                  size: 14, color: Color(0xFF1B5E20)),
+              const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOmerCard(BuildContext context, String nusach, _DayInfo dayInfo) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => _SiddurTextScreen(
+              title: 'ספירת העומר',
+              ref: _getOmerRef(nusach),
+            ),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B5E20).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF1B5E20).withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text('🌾', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ספירת העומר',
+                        style: GoogleFonts.rubik(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkBrown)),
+                    if (dayInfo.omerDay > 0)
+                      Text('היום: יום ${dayInfo.omerDay} לעומר',
+                          style: GoogleFonts.rubik(
+                              fontSize: 13,
+                              color: const Color(0xFF1B5E20),
+                              fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
             ],
           ),
         ),
@@ -228,7 +325,7 @@ class SiddurScreen extends StatelessWidget {
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AzkaraScreen()),
+          MaterialPageRoute(builder: (_) => const _AzkaraScreen()),
         ),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -247,30 +344,33 @@ class SiddurScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'נוסח לאזכרה',
-                      style: GoogleFonts.rubik(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.darkBrown,
-                      ),
-                    ),
-                    Text(
-                      'תהילים לפי אותיות שם הנפטר/ת',
-                      style: GoogleFonts.rubik(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    Text('נוסח לאזכרה',
+                        style: GoogleFonts.rubik(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkBrown)),
+                    Text('תהילים לפי אותיות שם הנפטר/ת',
+                        style: GoogleFonts.rubik(
+                            fontSize: 12, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_back_ios,
-                  size: 14, color: Color(0xFF1B5E20)),
+              const Icon(Icons.arrow_back_ios, size: 14, color: Color(0xFF1B5E20)),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(title,
+          style: GoogleFonts.rubik(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkBrown)),
     );
   }
 
@@ -283,45 +383,35 @@ class SiddurScreen extends StatelessWidget {
     final jewishCal = JewishCalendar.fromDateTime(now);
     final month = jewishCal.getJewishMonth();
     final day = jewishCal.getJewishDayOfMonth();
-    final dayOfWeek = now.weekday; // 1=Mon...7=Sun
+    final dayOfWeek = now.weekday;
 
-    // Check Shabbat
-    if (dayOfWeek == 6) { // Saturday
-      return _DayInfo('שבת קודש', '✡️', isShabbat: true);
+    // Omer day calculation
+    int omerDay = 0;
+    if (month == 1 && day >= 16) omerDay = day - 15;
+    if (month == 2) omerDay = day + 15;
+    if (month == 3 && day <= 5) omerDay = day + 44;
+    bool isOmer = omerDay > 0 && omerDay <= 49;
+
+    if (dayOfWeek == 6) {
+      return _DayInfo('שבת קודש', '✡️', isShabbat: true, isOmerSeason: isOmer, omerDay: omerDay);
     }
-
-    // Omer season: 16 Nisan - 5 Sivan
-    bool isOmer = (month == 1 && day >= 16) || month == 2 || (month == 3 && day <= 5);
-
-    // Chol HaMoed Pesach: 16-20 Nisan (in Israel)
     if (month == 1 && day >= 16 && day <= 20) {
-      return _DayInfo('חול המועד פסח', '🫓', isOmerSeason: isOmer, isCholHamoed: true, isYaalehVyavo: true);
+      return _DayInfo('חול המועד פסח', '🫓', isOmerSeason: isOmer, omerDay: omerDay);
     }
-    // Pesach Yom Tov
     if (month == 1 && (day == 15 || day == 21)) {
-      return _DayInfo('פסח', '🫓', isYomTov: true, isYaalehVyavo: true);
+      return _DayInfo('פסח', '🫓', isShabbat: true, omerDay: omerDay);
     }
-
-    // Chol HaMoed Sukkot: 16-20 Tishrei
     if (month == 7 && day >= 16 && day <= 20) {
-      return _DayInfo('חול המועד סוכות', '🏗️', isCholHamoed: true, isYaalehVyavo: true);
+      return _DayInfo('חול המועד סוכות', '🏗️', isOmerSeason: isOmer, omerDay: omerDay);
     }
-    // Sukkot Yom Tov
-    if (month == 7 && (day == 15 || day == 22)) {
-      return _DayInfo('סוכות', '🏗️', isYomTov: true, isYaalehVyavo: true);
-    }
-
-    // Rosh Chodesh
     if (day == 1 || day == 30) {
-      return _DayInfo('ראש חודש', '🌙', isRoshChodesh: true, isYaalehVyavo: true, isOmerSeason: isOmer);
+      return _DayInfo('ראש חודש', '🌙', isOmerSeason: isOmer, omerDay: omerDay);
     }
-
-    // Regular weekday
-    return _DayInfo('יום חול', '📖', isOmerSeason: isOmer);
+    return _DayInfo('יום חול', '📖', isOmerSeason: isOmer, omerDay: omerDay);
   }
 
   // ==========================================
-  // Nusach-specific refs
+  // Refs for simple prayers
   // ==========================================
 
   String _getNusachName(String nusach) {
@@ -333,151 +423,142 @@ class SiddurScreen extends StatelessWidget {
     }
   }
 
-  List<String> _getShacharitRefs(String nusach, _DayInfo day) {
-    if (day.isShabbat) {
-      return switch (nusach) {
-        'ashkenaz' => ['Siddur_Ashkenaz,_Shabbat,_Shacharit'],
-        'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Shabbat_Shacharit'],
-        _ => ['Siddur_Sefard,_Shabbat_Morning_Services'],
-      };
-    }
-    return switch (nusach) {
-      'ashkenaz' => ['Siddur_Ashkenaz,_Weekday,_Shacharit'],
-      'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Preparatory_Prayers', 'Siddur_Edot_HaMizrach,_Weekday_Shacharit'],
-      _ => ['Siddur_Sefard,_Upon_Arising', 'Siddur_Sefard,_Weekday_Shacharit'],
-    };
-  }
+  String _getOmerRef(String nusach) => switch (nusach) {
+    'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Maariv,_Sefirat_HaOmer',
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Counting_of_the_Omer',
+    _ => 'Siddur_Sefard,_Weekday_Maariv,_Sefirat_HaOmer',
+  };
 
-  List<String> _getMinchaRefs(String nusach, _DayInfo day) {
-    if (day.isShabbat) {
-      return switch (nusach) {
-        'ashkenaz' => ['Siddur_Ashkenaz,_Shabbat,_Minchah'],
-        'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Shabbat_Mincha'],
-        _ => ['Siddur_Sefard,_Shabbat_Mincha'],
-      };
-    }
-    return switch (nusach) {
-      'ashkenaz' => ['Siddur_Ashkenaz,_Weekday,_Minchah'],
-      'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Weekday_Mincha'],
-      _ => ['Siddur_Sefard,_Weekday_Mincha'],
-    };
-  }
+  String _getKiddushLevanaRef(String nusach) => switch (nusach) {
+    'edot_hamizrach' => 'Siddur_Sefard,_Kiddush_Levanah', // fallback
+    _ => 'Siddur_Sefard,_Kiddush_Levanah',
+  };
 
-  List<String> _getArvitRefs(String nusach, _DayInfo day) {
-    if (day.isShabbat) {
-      // Friday night = Kabbalat Shabbat + Maariv
-      return switch (nusach) {
-        'ashkenaz' => ['Siddur_Ashkenaz,_Shabbat,_Kabbalat_Shabbat', 'Siddur_Ashkenaz,_Shabbat,_Maariv'],
-        'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Kabbalat_Shabbat', 'Siddur_Edot_HaMizrach,_Shabbat_Arvit'],
-        _ => ['Siddur_Sefard,_Kabbalat_Shabbat', 'Siddur_Sefard,_Shabbat_Eve_Maariv'],
-      };
-    }
-    return switch (nusach) {
-      'ashkenaz' => ['Siddur_Ashkenaz,_Weekday,_Maariv'],
-      'edot_hamizrach' => ['Siddur_Edot_HaMizrach,_Weekday_Arvit'],
-      _ => ['Siddur_Sefard,_Weekday_Maariv'],
-    };
-  }
+  String _getBedtimeShemaRef(String nusach) => switch (nusach) {
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Bedtime_Shema',
+    _ => 'Siddur_Sefard,_Bedtime_Shema',
+  };
 
-  String _getOmerRef(String nusach) {
-    return switch (nusach) {
-      'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Maariv,_Sefirat_HaOmer',
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Counting_of_the_Omer',
-      _ => 'Siddur_Sefard,_Weekday_Maariv,_Sefirat_HaOmer',
-    };
-  }
+  String _getBirkatHamazonRef(String nusach) => switch (nusach) {
+    'ashkenaz' => 'Siddur_Ashkenaz,_Berachot,_Birkat_HaMazon',
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Post_Meal_Blessing',
+    _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon',
+  };
 
-  String _getKiddushLevanaRef(String nusach) {
-    return switch (nusach) {
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Kiddush_Levanah',
-      _ => 'Siddur_Sefard,_Kiddush_Levanah',
-    };
-  }
+  String _getMeeinShaloshRef(String nusach) => switch (nusach) {
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Al_Hamihya',
+    _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon', // includes me'ein shalosh
+  };
 
-  String _getBedtimeShemaRef(String nusach) {
-    return switch (nusach) {
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Bedtime_Shema',
-      _ => 'Siddur_Sefard,_Bedtime_Shema',
-    };
-  }
+  String _getAsherYatzarRef(String nusach) => switch (nusach) {
+    'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar',
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Preparatory_Prayers,_Morning_Blessings',
+    _ => 'Siddur_Sefard,_Weekday_Shacharit,_Asher_Yatzar',
+  };
 
-  String _getBirkatHamazonRef(String nusach) {
-    return switch (nusach) {
-      'ashkenaz' => 'Siddur_Ashkenaz,_Berachot,_Birkat_HaMazon',
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Post_Meal_Blessing',
-      _ => 'Siddur_Sefard,_Birchat_HaMazon,_Birchat_HaMazon',
-    };
-  }
-
-  String _getMeeinShaloshRef(String nusach) {
-    return switch (nusach) {
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Al_Hamihya',
-      _ => 'Siddur_Sefard,_Birchat_HaMazon,_Al_HaMichya',
-    };
-  }
-
-  String _getBoreiNefashot(String nusach) {
-    return switch (nusach) {
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Al_Hamihya',
-      _ => 'Siddur_Sefard,_Birchat_HaMazon,_Borei_Nefashot',
-    };
-  }
-
-  String _getAsherYatzarRef(String nusach) {
-    return switch (nusach) {
-      'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Preparatory_Prayers,_Asher_Yatzar',
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Preparatory_Prayers,_Morning_Blessings',
-      _ => 'Siddur_Sefard,_Upon_Arising,_Morning_Blessings',
-    };
-  }
-
-  String _getTefilatHaderechRef(String nusach) {
-    return switch (nusach) {
-      'ashkenaz' => 'Siddur_Ashkenaz,_Berachot,_Tefillat_HaDerech',
-      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Traveler%27s_Prayer',
-      _ => 'Siddur_Sefard,_Blessings,_Traveler%27s_Prayer',
-    };
-  }
+  String _getTefilatHaderechRef(String nusach) => switch (nusach) {
+    'ashkenaz' => 'Siddur_Ashkenaz,_Berachot,_Tefillat_HaDerech',
+    'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Traveler%27s_Prayer',
+    _ => 'Siddur_Sefard,_Blessings,_Traveler%27s_Prayer',
+  };
 }
 
 class _DayInfo {
   final String label;
   final String emoji;
   final bool isShabbat;
-  final bool isYomTov;
-  final bool isCholHamoed;
-  final bool isRoshChodesh;
   final bool isOmerSeason;
-  final bool isYaalehVyavo;
-
-  const _DayInfo(
-    this.label,
-    this.emoji, {
-    this.isShabbat = false,
-    this.isYomTov = false,
-    this.isCholHamoed = false,
-    this.isRoshChodesh = false,
-    this.isOmerSeason = false,
-    this.isYaalehVyavo = false,
-  });
+  final int omerDay;
+  const _DayInfo(this.label, this.emoji,
+      {this.isShabbat = false, this.isOmerSeason = false, this.omerDay = 0});
 }
 
-/// Shows prayer text with large, beautiful font and clear nikud
-class SiddurPrayerScreen extends StatefulWidget {
-  final String title;
-  final List<String> refs;
+// ==========================================
+// Prayer list screen (for categories with sub-prayers)
+// ==========================================
 
-  const SiddurPrayerScreen({
-    super.key,
-    required this.title,
-    required this.refs,
-  });
+class _PrayerListScreen extends StatelessWidget {
+  final PrayerCategory category;
+  const _PrayerListScreen({required this.category});
 
   @override
-  State<SiddurPrayerScreen> createState() => _SiddurPrayerScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(category.name),
+        backgroundColor: const Color(0xFF1B5E20),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: category.items.length,
+          itemBuilder: (context, index) {
+            final prayer = category.items[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => _SiddurTextScreen(
+                      title: prayer.name,
+                      ref: prayer.ref,
+                    ),
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF1B5E20).withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.menu_book,
+                          color: Color(0xFF1B5E20), size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(prayer.name,
+                            style: GoogleFonts.rubik(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.darkBrown)),
+                      ),
+                      const Icon(Icons.arrow_back_ios,
+                          size: 14, color: Color(0xFF1B5E20)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
-class _SiddurPrayerScreenState extends State<SiddurPrayerScreen> {
+// ==========================================
+// Siddur text screen - beautiful large font
+// ==========================================
+
+class _SiddurTextScreen extends StatefulWidget {
+  final String title;
+  final String ref;
+  const _SiddurTextScreen({required this.title, required this.ref});
+
+  @override
+  State<_SiddurTextScreen> createState() => _SiddurTextScreenState();
+}
+
+class _SiddurTextScreenState extends State<_SiddurTextScreen> {
   final SefariaService _sefaria = SefariaService();
   List<String> _segments = [];
   bool _isLoading = true;
@@ -485,80 +566,65 @@ class _SiddurPrayerScreenState extends State<SiddurPrayerScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPrayer();
+    _load();
   }
 
-  Future<void> _loadPrayer() async {
-    final allSegments = <String>[];
-
-    for (final ref in widget.refs) {
-      try {
-        final data = await _sefaria.getText(ref);
-        if (data.containsKey('error') &&
-            data['error'].toString().contains('complex')) {
-          // Complex ref - try known sub-sections
-          allSegments.addAll(await _fetchComplex(ref));
-        } else {
-          final versions = data['versions'] as List?;
-          if (versions != null) {
-            for (final version in versions) {
-              if (version['actualLanguage'] == 'he' &&
-                  version['text'] != null) {
-                final text = version['text'];
-                if (text is List) {
-                  allSegments.addAll(_flatten(text));
-                } else if (text is String) {
-                  allSegments.add(text);
-                }
-                break;
-              }
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (allSegments.isEmpty) {
-      allSegments.add('לא ניתן לטעון את התפילה. נסה שוב מאוחר יותר.');
-    }
-
-    if (mounted) {
-      setState(() {
-        _segments = allSegments;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<List<String>> _fetchComplex(String ref) async {
-    // Try common Amidah sub-sections
-    final parts = [
-      'Patriarchs', 'Divine_Might', 'Holiness_of_God',
-      'Knowledge', 'Repentance', 'Forgiveness', 'Redemption',
-      'Healing', 'Prosperity', 'Gathering_the_Exiles', 'Justice',
-      'Against_Enemies', 'The_Righteous', 'Rebuilding_Jerusalem',
-      'Kingdom_of_David', 'Response_to_Prayer', 'Temple_Service',
-      'Thanksgiving', 'Peace', 'Concluding_Passage',
-      'Sanctity_of_the_Day', 'Birkat_Kohanim', 'Kedushah',
-    ];
-    final result = <String>[];
-
-    // First try direct sub-nodes from index
-    for (final part in parts) {
-      try {
-        final data = await _sefaria.getText('$ref,_$part');
-        if (data.containsKey('error')) continue;
+  Future<void> _load() async {
+    try {
+      final data = await _sefaria.getText(widget.ref);
+      if (data.containsKey('error') &&
+          data['error'].toString().contains('complex')) {
+        _segments = await _fetchComplex(widget.ref);
+      } else {
         final versions = data['versions'] as List?;
         if (versions != null) {
           for (final version in versions) {
             if (version['actualLanguage'] == 'he' && version['text'] != null) {
               final text = version['text'];
               if (text is List) {
-                result.addAll(_flatten(text));
-              } else if (text is String && text.isNotEmpty) {
-                result.add(text);
+                _segments = _flatten(text);
+              } else if (text is String) {
+                _segments = [text];
               }
               break;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (_segments.isEmpty) {
+      _segments = ['לא ניתן לטעון את התפילה. נסה שוב מאוחר יותר.'];
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<List<String>> _fetchComplex(String ref) async {
+    final parts = [
+      'Patriarchs', 'Divine_Might', 'Holiness_of_God', 'Knowledge',
+      'Repentance', 'Forgiveness', 'Redemption', 'Healing', 'Prosperity',
+      'Gathering_the_Exiles', 'Justice', 'Against_Enemies', 'The_Righteous',
+      'Rebuilding_Jerusalem', 'Kingdom_of_David', 'Response_to_Prayer',
+      'Temple_Service', 'Thanksgiving', 'Peace', 'Concluding_Passage',
+      'Sanctity_of_the_Day', 'Birkat_Kohanim', 'Kedushah',
+    ];
+    final result = <String>[];
+    for (final part in parts) {
+      try {
+        final data = await _sefaria.getText('$ref,_$part');
+        if (!data.containsKey('error')) {
+          final versions = data['versions'] as List?;
+          if (versions != null) {
+            for (final version in versions) {
+              if (version['actualLanguage'] == 'he' && version['text'] != null) {
+                final text = version['text'];
+                if (text is List) {
+                  result.addAll(_flatten(text));
+                } else if (text is String && text.isNotEmpty) {
+                  result.add(text);
+                }
+                break;
+              }
             }
           }
         }
@@ -601,16 +667,23 @@ class _SiddurPrayerScreenState extends State<SiddurPrayerScreen> {
           : Directionality(
               textDirection: TextDirection.rtl,
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.cream,
+                      color: const Color(0xFFFFFDF5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.3),
+                        color: AppColors.gold.withValues(alpha: 0.4),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,14 +691,15 @@ class _SiddurPrayerScreenState extends State<SiddurPrayerScreen> {
                         final clean = TorahTextViewer.stripHtml(segment);
                         if (clean.isEmpty) return const SizedBox.shrink();
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: Text(
                             clean,
-                            style: GoogleFonts.rubik(
-                              fontSize: 24,
-                              height: 2.2,
-                              color: AppColors.darkBrown,
-                              fontWeight: FontWeight.w400,
+                            style: const TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 26,
+                              height: 2.0,
+                              color: Color(0xFF2C1810),
+                              letterSpacing: 0.3,
                             ),
                           ),
                         );
@@ -639,15 +713,18 @@ class _SiddurPrayerScreenState extends State<SiddurPrayerScreen> {
   }
 }
 
-/// Azkara screen - Tehillim by letters of the niftar's name
-class AzkaraScreen extends StatefulWidget {
-  const AzkaraScreen({super.key});
+// ==========================================
+// Azkara screen - Tehillim by name letters
+// ==========================================
+
+class _AzkaraScreen extends StatefulWidget {
+  const _AzkaraScreen();
 
   @override
-  State<AzkaraScreen> createState() => _AzkaraScreenState();
+  State<_AzkaraScreen> createState() => _AzkaraScreenState();
 }
 
-class _AzkaraScreenState extends State<AzkaraScreen> {
+class _AzkaraScreenState extends State<_AzkaraScreen> {
   final _nameController = TextEditingController();
   final SefariaService _sefaria = SefariaService();
   List<int> _chapters = [];
@@ -655,45 +732,37 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
   bool _isLoading = false;
   String _displayName = '';
 
-  // Map Hebrew letters to Tehillim chapters (by acrostic / traditional association)
-  static const _letterToChapters = {
-    'א': [1, 111], 'ב': [2, 112], 'ג': [3, 113], 'ד': [4, 114],
-    'ה': [5, 115], 'ו': [6, 116], 'ז': [7, 117], 'ח': [8, 118],
-    'ט': [9, 119], 'י': [10, 120], 'כ': [11, 121], 'ך': [11, 121],
-    'ל': [12, 122], 'מ': [13, 123], 'ם': [13, 123], 'נ': [14, 124],
-    'ן': [14, 124], 'ס': [15, 125], 'ע': [16, 126], 'פ': [17, 127],
-    'ף': [17, 127], 'צ': [18, 128], 'ץ': [18, 128], 'ק': [19, 129],
-    'ר': [20, 130], 'ש': [21, 131], 'ת': [22, 132],
+  static const _letterToChapter = {
+    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
+    'ט': 9, 'י': 10, 'כ': 20, 'ך': 20, 'ל': 30, 'מ': 40, 'ם': 40,
+    'נ': 50, 'ן': 50, 'ס': 60, 'ע': 70, 'פ': 80, 'ף': 80,
+    'צ': 90, 'ץ': 90, 'ק': 100, 'ר': 119, 'ש': 121, 'ת': 122,
   };
 
-  void _calculateChapters() {
+  void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
     final chapters = <int>{};
     for (final char in name.split('')) {
-      final ch = _letterToChapters[char];
-      if (ch != null) chapters.add(ch[0]);
+      final ch = _letterToChapter[char];
+      if (ch != null) chapters.add(ch);
     }
-    // Also add נשמה chapters (the word נשמה)
+    // Add נשמה
     for (final char in 'נשמה'.split('')) {
-      final ch = _letterToChapters[char];
-      if (ch != null) chapters.add(ch[0]);
+      final ch = _letterToChapter[char];
+      if (ch != null) chapters.add(ch);
     }
 
     setState(() {
       _chapters = chapters.toList()..sort();
       _displayName = name;
     });
-
     _loadChapters();
   }
 
   Future<void> _loadChapters() async {
-    setState(() {
-      _isLoading = true;
-      _loadedText = [];
-    });
+    setState(() { _isLoading = true; _loadedText = []; });
 
     final texts = <String>[];
     for (final chapter in _chapters) {
@@ -703,8 +772,8 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
         if (versions != null) {
           for (final version in versions) {
             if (version['actualLanguage'] == 'he' && version['text'] != null) {
-              final text = version['text'];
               texts.add('--- פרק $chapter ---');
+              final text = version['text'];
               if (text is List) {
                 for (final item in text) {
                   if (item is String && item.isNotEmpty) texts.add(item);
@@ -722,19 +791,11 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
       } catch (_) {}
     }
 
-    if (mounted) {
-      setState(() {
-        _loadedText = texts;
-        _isLoading = false;
-      });
-    }
+    if (mounted) setState(() { _loadedText = texts; _isLoading = false; });
   }
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
+  void dispose() { _nameController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -756,14 +817,11 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'שם הנפטר/ת',
-                    style: GoogleFonts.rubik(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkBrown,
-                    ),
-                  ),
+                  Text('שם הנפטר/ת',
+                      style: GoogleFonts.rubik(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.darkBrown)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -776,22 +834,20 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
                             hintText: 'הכנס שם בעברית',
                             hintStyle: GoogleFonts.rubik(color: Colors.grey.shade400),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton(
-                        onPressed: _calculateChapters,
+                        onPressed: _calculate,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1B5E20),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text('חפש', style: GoogleFonts.rubik(fontSize: 16)),
                       ),
@@ -799,22 +855,14 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
                   ),
                   if (_chapters.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      'תהילים לעילוי נשמת $_displayName:',
-                      style: GoogleFonts.rubik(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1B5E20),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'פרקים: ${_chapters.join(", ")}',
-                      style: GoogleFonts.rubik(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    Text('תהילים לעילוי נשמת $_displayName:',
+                        style: GoogleFonts.rubik(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1B5E20))),
+                    Text('פרקים: ${_chapters.join(", ")}',
+                        style: GoogleFonts.rubik(
+                            fontSize: 13, color: Colors.grey.shade600)),
                   ],
                 ],
               ),
@@ -825,25 +873,19 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
                       child: CircularProgressIndicator(color: Color(0xFF1B5E20)))
                   : _loadedText.isEmpty
                       ? Center(
-                          child: Text(
-                            'הכנס את שם הנפטר/ת לקבלת פרקי תהילים',
-                            style: GoogleFonts.rubik(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        )
+                          child: Text('הכנס את שם הנפטר/ת לקבלת פרקי תהילים',
+                              style: GoogleFonts.rubik(
+                                  fontSize: 14, color: Colors.grey)))
                       : ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
                             Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: AppColors.cream,
+                                color: const Color(0xFFFFFDF5),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: AppColors.gold.withValues(alpha: 0.3),
-                                ),
+                                    color: AppColors.gold.withValues(alpha: 0.4)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,19 +905,17 @@ class _AzkaraScreenState extends State<AzkaraScreen> {
                                       ),
                                     );
                                   }
-                                  final clean =
-                                      TorahTextViewer.stripHtml(segment);
-                                  if (clean.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
+                                  final clean = TorahTextViewer.stripHtml(segment);
+                                  if (clean.isEmpty) return const SizedBox.shrink();
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.only(bottom: 12),
                                     child: Text(
                                       clean,
-                                      style: GoogleFonts.rubik(
-                                        fontSize: 24,
-                                        height: 2.2,
-                                        color: AppColors.darkBrown,
+                                      style: const TextStyle(
+                                        fontFamily: 'serif',
+                                        fontSize: 26,
+                                        height: 2.0,
+                                        color: Color(0xFF2C1810),
                                       ),
                                     ),
                                   );
