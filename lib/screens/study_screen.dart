@@ -7,13 +7,15 @@ import '../models/study_section.dart';
 import '../services/sefaria_service.dart';
 import '../utils/constants.dart';
 import '../widgets/torah_text_viewer.dart';
+import '../services/bookmark_service.dart';
 import '../services/daf_summary_service.dart';
 // DafSummaryService is initialized once in main.dart
 
 class StudyScreen extends StatefulWidget {
   final StudySection section;
+  final String? initialRef; // For bookmark navigation
 
-  const StudyScreen({super.key, required this.section});
+  const StudyScreen({super.key, required this.section, this.initialRef});
 
   @override
   State<StudyScreen> createState() => _StudyScreenState();
@@ -62,7 +64,7 @@ class _StudyScreenState extends State<StudyScreen> {
         case StudySectionType.pirkeiAvot:
           await _loadPirkeiAvot();
         case StudySectionType.gemara:
-          await _loadGemara();
+          await _loadGemara(overrideRef: widget.initialRef);
       }
 
       if (mounted) {
@@ -595,6 +597,14 @@ class _StudyScreenState extends State<StudyScreen> {
           icon: const Icon(Icons.arrow_forward),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (!_isLoading && _hebrewRef.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.bookmark_add_outlined),
+              tooltip: 'שמור סימניה',
+              onPressed: _saveBookmark,
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -706,6 +716,34 @@ class _StudyScreenState extends State<StudyScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _saveBookmark() async {
+    final bookmark = Bookmark(
+      sectionKey: widget.section.key,
+      sectionTitle: widget.section.title,
+      hebrewRef: _hebrewRef,
+      sefariaRef: _currentGemaraRef,
+      savedAt: DateTime.now(),
+    );
+    await BookmarkService.addBookmark(bookmark);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text(
+              '🔖 סימניה נשמרה: $_hebrewRef',
+              style: GoogleFonts.rubik(),
+            ),
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   // ==========================================

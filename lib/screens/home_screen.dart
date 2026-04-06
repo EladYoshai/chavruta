@@ -22,6 +22,7 @@ import 'shop_screen.dart';
 import 'siddur_screen.dart';
 import 'women_screen.dart';
 import 'siyum_yahrzeit_screen.dart';
+import 'bookmarks_screen.dart';
 import 'daily_tracker_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -835,7 +836,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Tools section: Siyum + Yahrzeit
+                // Tools section: Bookmarks + Yahrzeit
                 const SliverToBoxAdapter(child: SizedBox(height: 8)),
                 SliverToBoxAdapter(
                   child: Padding(
@@ -844,6 +845,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       textDirection: TextDirection.rtl,
                       child: Row(
                         children: [
+                          Expanded(
+                            child: _buildToolCard(
+                              context,
+                              emoji: '🔖',
+                              label: 'סימניות',
+                              color: AppColors.darkGold,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const BookmarksScreen()),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _buildToolCard(
                               context,
