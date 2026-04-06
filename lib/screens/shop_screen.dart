@@ -24,30 +24,34 @@ class ShopItem {
 }
 
 const List<ShopItem> shopItems = [
-  // === Avatars - People (3D images) ===
-  ShopItem(id: 'kohen_gadol', emoji: '', name: 'כהן גדול', description: 'כהן גדול בבגדי זהב', price: 0, category: 'avatar', imagePath: 'assets/images/avatars/kohen_gadol.png'),
-  ShopItem(id: 'rebbetzin', emoji: '', name: 'הרבנית', description: 'רבנית עם נרות שבת', price: 0, category: 'avatar', imagePath: 'assets/images/avatars/rebbetzin.png'),
-  ShopItem(id: 'talmid_chacham', emoji: '', name: 'תלמיד חכם', description: 'תלמיד חכם עם גמרא', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/talmid_chacham.png'),
-  ShopItem(id: 'chacham_sefardi', emoji: '', name: 'חכם ספרדי', description: 'חכם עם קולמוס וקלף', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/chacham_sefardi.png'),
-  ShopItem(id: 'morenu_verabenu', emoji: '', name: 'מורינו ורבינו', description: 'מורה תורה בבית המדרש', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/morenu_verabenu.png'),
-  ShopItem(id: 'tzaddik_nistar', emoji: '', name: 'צדיק נסתר', description: 'צדיק נסתר עם הילה זהובה', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/tzaddik_nistar.png'),
-  ShopItem(id: 'tzaddeket', emoji: '', name: 'צדיקה', description: 'צדיקה בגן של אור', price: 0, category: 'avatar', imagePath: 'assets/images/avatars/tzaddeket.png'),
-  ShopItem(id: 'gavra_raba', emoji: '', name: 'גברא רבא', description: 'רב שקוע בלימוד הספרים', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/gavra_raba.png'),
+  // === Avatars - People ===
+  ShopItem(id: 'kohen_gadol', emoji: '', name: 'כהן גדול', description: 'כהן גדול בבגדי זהב', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/kohen_gadol.png'),
+  ShopItem(id: 'rebbetzin', emoji: '', name: 'הרבנית', description: 'רבנית עם נרות שבת', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/rebbetzin.png'),
+  ShopItem(id: 'talmid_chacham', emoji: '', name: 'תלמיד חכם', description: 'תלמיד חכם עם גמרא', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/talmid_chacham.png'),
+  ShopItem(id: 'chacham_sefardi', emoji: '', name: 'חכם ספרדי', description: 'חכם עם קולמוס וקלף', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/chacham_sefardi.png'),
+  ShopItem(id: 'morenu_verabenu', emoji: '', name: 'מורינו ורבינו', description: 'מורה תורה בבית המדרש', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/morenu_verabenu.png'),
+  ShopItem(id: 'tzaddik_nistar', emoji: '', name: 'צדיק נסתר', description: 'צדיק נסתר ברחוב', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/tzaddik_nistar.png'),
+  ShopItem(id: 'tzaddeket', emoji: '', name: 'צדיקה', description: 'צדיקה בגן של אור', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/tzaddeket.png'),
+  ShopItem(id: 'gavra_raba', emoji: '', name: 'גברא רבא', description: 'רב שקוע בלימוד הספרים', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/gavra_raba.png'),
+  ShopItem(id: 'navi', emoji: '', name: 'נביא', description: 'נביא עם הילה זהובה', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/navi.png'),
+  ShopItem(id: 'amora', emoji: '', name: 'אמורא', description: 'אמורא בין הספרים העתיקים', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/amora.png'),
+  ShopItem(id: 'lamdan', emoji: '', name: 'למדן', description: 'למדן בספריה חמה', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/lamdan.png'),
 
-  // === Avatars - Emoji Foods ===
-  ShopItem(id: '🫓', emoji: '🫓', name: "ג'חנון", description: "!ג'חנון חם בשבת בבוקר", price: 90, category: 'avatar'),
-  ShopItem(id: '🐟', emoji: '🐟', name: 'גפילטע פיש', description: 'מאכל מסורתי אשכנזי', price: 90, category: 'avatar'),
-  ShopItem(id: '🍩', emoji: '🍩', name: 'סופגניה', description: '!חנוכה שמח', price: 80, category: 'avatar'),
-  ShopItem(id: '🫕', emoji: '🫕', name: 'חמין / צ\'ולנט', description: 'מה יש לשבת?', price: 100, category: 'avatar'),
-  ShopItem(id: '🥙', emoji: '🥙', name: 'פלאפל', description: 'האוכל הלאומי', price: 70, category: 'avatar'),
-  ShopItem(id: '🧆', emoji: '🧆', name: 'קובה', description: '!קובה של סבתא', price: 85, category: 'avatar'),
-  ShopItem(id: '🥯', emoji: '🥯', name: 'בורקס', description: 'בורקס חם מהתנור', price: 70, category: 'avatar'),
-  ShopItem(id: '🍷', emoji: '🍷', name: 'כוס קידוש', description: 'בורא פרי הגפן', price: 85, category: 'avatar'),
+  // === Avatars - Foods (3D images) ===
+  ShopItem(id: 'jachnun', emoji: '', name: "ג'חנון", description: "ג'חנון חם בשבת בבוקר!", price: 90, category: 'avatar', imagePath: 'assets/images/avatars/jachnun.png'),
+  ShopItem(id: 'gefilte_fish', emoji: '', name: 'גפילטע פיש', description: 'מאכל מסורתי אשכנזי', price: 90, category: 'avatar', imagePath: 'assets/images/avatars/gefilte_fish.png'),
+  ShopItem(id: 'sufganiya', emoji: '', name: 'סופגניה', description: 'חנוכה שמח!', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/sufganiya.png'),
+  ShopItem(id: 'cholent', emoji: '', name: 'חמין / צ\'ולנט', description: 'מה יש לשבת?', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/cholent.png'),
+  ShopItem(id: 'falafel', emoji: '', name: 'פלאפל', description: 'האוכל הלאומי', price: 70, category: 'avatar', imagePath: 'assets/images/avatars/falafel.png'),
+  ShopItem(id: 'kubeh', emoji: '', name: 'קובה', description: 'קובה של סבתא!', price: 85, category: 'avatar', imagePath: 'assets/images/avatars/kubeh.png'),
+  ShopItem(id: 'bourekas', emoji: '', name: 'בורקס', description: 'בורקס חם מהתנור', price: 70, category: 'avatar', imagePath: 'assets/images/avatars/bourekas.png'),
+  ShopItem(id: 'kiddush_cup', emoji: '', name: 'כוס קידוש', description: 'בורא פרי הגפן', price: 85, category: 'avatar', imagePath: 'assets/images/avatars/kiddush_cup.png'),
+  ShopItem(id: 'hamantaschen', emoji: '', name: 'אוזני המן', description: 'פורים שמח!', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/hamantaschen.png'),
 
-  // === Avatars - Emoji Jewish Items ===
-  ShopItem(id: '🕎', emoji: '🕎', name: 'חנוכיה', description: 'מצווה להניחה על פתח ביתו', price: 100, category: 'avatar'),
-  ShopItem(id: '📜', emoji: '📜', name: 'ספר תורה', description: 'הכתר של התורה', price: 200, category: 'avatar'),
-  ShopItem(id: '🏛️', emoji: '🏛️', name: 'בית המקדש', description: 'במהרה יבנה', price: 250, category: 'avatar'),
+  // === Avatars - Jewish Items (3D images) ===
+  ShopItem(id: 'chanukia', emoji: '', name: 'חנוכיה', description: 'מצווה להניחה על פתח ביתו', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/chanukia.png'),
+  ShopItem(id: 'sefer_torah', emoji: '', name: 'ספר תורה', description: 'הכתר של התורה', price: 200, category: 'avatar', imagePath: 'assets/images/avatars/sefer_torah.png'),
+  ShopItem(id: 'beit_hamikdash', emoji: '', name: 'בית המקדש', description: 'במהרה יבנה', price: 250, category: 'avatar', imagePath: 'assets/images/avatars/beit_hamikdash.png'),
 
   // === Custom titles ===
   ShopItem(id: 'title_masmid', emoji: '📖', name: 'מתמיד', description: 'תואר מיוחד: מתמיד', price: 100, category: 'title'),
