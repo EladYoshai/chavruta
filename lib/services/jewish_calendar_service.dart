@@ -215,11 +215,13 @@ class JewishCalendarService {
   // ==========================================
 
   static bool _isMashivHaruachSeason(int month, int day) {
-    // From 22 Tishrei (Shmini Atzeret) to 15 Nisan (1st Pesach)
-    // Months: 7=Tishrei, 8=Cheshvan... 1=Nisan
-    if (month == 7 && day >= 22) return true; // Tishrei from Shmini Atzeret
-    if (month >= 8) return true; // Cheshvan through Adar
-    if (month == 1 && day < 15) return true; // Nisan before Pesach
+    // From Musaf 22 Tishrei (Shmini Atzeret) to Musaf 15 Nisan (1st Pesach)
+    // kosher_dart months: 7=Tishrei, 8=Cheshvan, 9=Kislev, 10=Tevet,
+    // 11=Shevat, 12=Adar, 13=Adar II, 1=Nisan, 2=Iyar... 6=Elul
+    if (month == 7 && day >= 22) return true;   // Tishrei from Shmini Atzeret
+    if (month >= 8 && month <= 13) return true;  // Cheshvan through Adar II (winter)
+    if (month == 1 && day < 15) return true;     // Nisan before Pesach
+    // Months 1 (from 15 Nisan), 2, 3, 4, 5, 6 = summer → false
     return false;
   }
 
@@ -296,10 +298,11 @@ class JewishCalendarService {
     // Yom Yerushalayim (28 Iyar)
     if (month == 2 && day == 28) return false;
 
-    // 1-5 Sivan (before + Shavuot)
-    if (month == 3 && day >= 1 && day <= 5) return false;
-    // Shavuot itself
-    if (month == 3 && (day == 6 || day == 7)) return false;
+    // 1-8 Sivan (Rosh Chodesh through Isru Chag Shavuot in Chu"l)
+    if (month == 3 && day >= 1 && day <= 8) return false;
+
+    // Isru Chag Pesach (22 Nisan in Israel, 23 in Chu"l)
+    // Already covered by month==1 (all of Nisan)
 
     // 15 Av
     if (month == 5 && day == 15) return false;
@@ -362,26 +365,31 @@ class JewishCalendarService {
 
   static HallelType _getHallelType(int month, int day, bool isCholHamoed, bool isInIsrael) {
     // Full Hallel:
-    // Sukkot all days (15-22 Tishrei in Israel, 15-23 abroad)
-    if (month == 7 && day >= 15 && day <= 23) return HallelType.full;
 
-    // Chanukah all 8 days
+    // Sukkot + Shmini Atzeret/Simchat Torah - full hallel every day
+    if (month == 7 && day >= 15 && day <= 22) return HallelType.full; // Israel
+    if (month == 7 && day == 23 && !isInIsrael) return HallelType.full; // Simchat Torah Chu"l
+
+    // Chanukah all 8 days - full hallel
     if (month == 9 && day >= 25) return HallelType.full;
     if (month == 10 && day <= 3) return HallelType.full;
 
-    // Shavuot
-    if (month == 3 && (day == 6 || day == 7)) return HallelType.full;
+    // Shavuot - full hallel
+    if (month == 3 && day == 6) return HallelType.full;
+    if (month == 3 && day == 7 && !isInIsrael) return HallelType.full;
 
-    // First day(s) of Pesach
+    // First day(s) of Pesach only - full hallel
     if (month == 1 && day == 15) return HallelType.full;
     if (month == 1 && day == 16 && !isInIsrael) return HallelType.full;
 
     // Half Hallel:
-    // Rosh Chodesh
-    if (day == 1 || day == 30) return HallelType.half;
 
-    // Chol HaMoed Pesach + last days of Pesach
-    if (month == 1 && day >= 16 && day <= 22) return HallelType.half;
+    // Chol HaMoed Pesach + last days of Pesach (half hallel, NOT full)
+    if (month == 1 && day >= 16 && day <= 21 && isInIsrael) return HallelType.half;
+    if (month == 1 && day >= 17 && day <= 22 && !isInIsrael) return HallelType.half;
+
+    // Rosh Chodesh - half hallel
+    if (day == 1 || day == 30) return HallelType.half;
 
     return HallelType.none;
   }
