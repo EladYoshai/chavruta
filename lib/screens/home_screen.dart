@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
@@ -95,17 +96,38 @@ const omerHebrew = [
     'היום תשעה וארבעים יום שהם שבעה שבועות לעומר',
   ];
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _parshaHeName = '';
   String _hebrewDate = '';
   String _dayOfWeek = '';
   String _omerText = '';
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCalendarInfo();
     AnalyticsService.screenView('home');
+    // Refresh every 30 seconds to update meat/dairy timer countdown
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh UI when user returns to the app (updates meat/dairy timer etc.)
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadCalendarInfo() async {
