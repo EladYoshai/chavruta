@@ -534,8 +534,8 @@ class SiddurDayInfo {
     return 'יום חול';
   }
 
-  /// List of active prayer modifications for display (nusach-aware)
-  List<String> getActiveModifications(String nusach) {
+  /// List of active prayer modifications for display (nusach + tefila aware)
+  List<String> getActiveModifications(String nusach, [TefilaType? tefila]) {
     final mods = <String>[];
     if (mashivHaruach) {
       mods.add('✅ משיב הרוח ומוריד הגשם');
@@ -558,21 +558,42 @@ class SiddurDayInfo {
       mods.add('✅ המלך המשפט (במקום מלך אוהב צדקה ומשפט)');
       mods.add('✅ זכרנו לחיים, מי כמוך, וכתוב, בספר');
     }
-    if (hallelType == HallelType.full) {
-      mods.add('✅ הלל שלם עם ברכה');
-    } else if (hallelType == HallelType.half) {
-      if (nusach == 'edot_hamizrach') {
-        mods.add('✅ חצי הלל (בלי ברכה)');
-      } else {
-        mods.add('✅ חצי הלל עם ברכה');
+    // Hallel only at shacharit (or general view)
+    if (tefila == null || tefila == TefilaType.shacharit) {
+      if (hallelType == HallelType.full) {
+        mods.add('✅ הלל שלם עם ברכה');
+      } else if (hallelType == HallelType.half) {
+        if (nusach == 'edot_hamizrach') {
+          mods.add('✅ חצי הלל (בלי ברכה)');
+        } else {
+          mods.add('✅ חצי הלל עם ברכה');
+        }
       }
     }
-    if (!sayTachanun) mods.add('❌ אין תחנון');
+    if (tefila == TefilaType.arvit) {
+      // Never tachanun at arvit
+    } else if (tefila == TefilaType.mincha && !sayTachanunAtMincha) {
+      mods.add('❌ אין תחנון (מנחה)');
+    } else if (!sayTachanun) {
+      mods.add('❌ אין תחנון');
+    }
     if (fastDay != FastDayType.none && fastDay != FastDayType.yomKippur) {
-      if (nusach == 'ashkenaz') {
-        mods.add('✅ עננו (במנחה בלבד)');
+      if (tefila != null) {
+        // Tefila-specific: show only if relevant for this tefila
+        if (nusach == 'ashkenaz') {
+          if (tefila == TefilaType.mincha) mods.add('✅ עננו (בשמע קולנו)');
+        } else {
+          if (tefila == TefilaType.shacharit || tefila == TefilaType.mincha) {
+            mods.add('✅ עננו (בשמע קולנו)');
+          }
+        }
       } else {
-        mods.add('✅ עננו (בשחרית ובמנחה)');
+        // General: show overview
+        if (nusach == 'ashkenaz') {
+          mods.add('✅ עננו (במנחה בלבד)');
+        } else {
+          mods.add('✅ עננו (בשחרית ובמנחה)');
+        }
       }
     }
     if (isOmerSeason) mods.add('✅ ספירת העומר - יום $omerDay');
@@ -750,32 +771,54 @@ class MinhagProfile {
 
 class DayPrecedence {
   /// Returns the precedence level (higher = takes priority)
-  /// Used when multiple day types overlap
+  /// Complete precedence table for ALL combinations:
   static int getPrecedence(SiddurDayInfo info) {
-    // Yom Kippur is highest
+    // Yom Kippur (highest - overrides everything)
     if (info.fastDay == FastDayType.yomKippur) return 100;
-    // Yom Tov
-    if (info.isYomTov) return 90;
-    // Shabbat + Yom Tov
+    // Yom Tov on Shabbat (שבת + יו"ט)
     if (info.isYomTovOnShabbat) return 95;
-    // Shabbat + Chol HaMoed
+    // Yom Tov (not on Shabbat)
+    if (info.isYomTov) return 90;
+    // Shabbat + Chol HaMoed (שבת חול המועד)
     if (info.isShabbatCholHamoed) return 85;
-    // Shabbat + Rosh Chodesh
+    // Shabbat + Rosh Chodesh + Chanukah (שבת ר"ח חנוכה)
+    if (info.isShabbatRoshChodesh && info.isChanukah) return 82;
+    // Shabbat + Rosh Chodesh (שבת ר"ח)
     if (info.isShabbatRoshChodesh) return 80;
+    // Shabbat + Chanukah (שבת חנוכה)
+    if (info.isShabbat && info.isChanukah) return 75;
     // Regular Shabbat
     if (info.isShabbat) return 70;
-    // Chol HaMoed
+    // Chol HaMoed (not Shabbat)
     if (info.isCholHamoed) return 60;
-    // Chanukah
-    if (info.isChanukah) return 50;
-    // Rosh Chodesh
-    if (info.isRoshChodesh) return 45;
-    // Fast day
-    if (info.fastDay != FastDayType.none) return 40;
     // Purim
     if (info.isPurim) return 55;
+    // Chanukah + Rosh Chodesh (ר"ח טבת בחנוכה)
+    if (info.isChanukah && info.isRoshChodesh) return 52;
+    // Chanukah
+    if (info.isChanukah) return 50;
+    // Rosh Chodesh (both days if 2-day RC)
+    if (info.isRoshChodesh) return 45;
+    // Fast day (minor fasts)
+    if (info.fastDay != FastDayType.none) return 40;
     // Regular weekday
     return 10;
+  }
+
+  /// Get day description for complex overlapping days
+  static String getComplexDayDescription(SiddurDayInfo info) {
+    final parts = <String>[];
+    if (info.isShabbat) parts.add('שבת');
+    if (info.isRoshChodesh) parts.add('ר"ח');
+    if (info.isChanukah) parts.add('חנוכה');
+    if (info.isCholHamoed) parts.add('חוה"מ ${info.holiday.name}');
+    if (info.isYomTov) parts.add(info.holiday.name);
+    if (info.isPurim) parts.add('פורים');
+    if (info.fastDay != FastDayType.none && info.fastDay != FastDayType.yomKippur) {
+      parts.add(info.fastDay.hebrewName);
+    }
+    if (parts.isEmpty) return 'יום חול';
+    return parts.join(' • ');
   }
 
   /// Determine which Amidah structure to use
