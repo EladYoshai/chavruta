@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/user_progress.dart';
+import '../services/analytics_service.dart';
 import '../services/storage_service.dart';
 import '../utils/constants.dart';
 
@@ -24,6 +25,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> completeSection(String sectionKey, int zuzimReward) async {
     await _storage.markSectionComplete(_progress, sectionKey, zuzimReward);
+    AnalyticsService.sectionCompleted(sectionKey);
     notifyListeners();
   }
 
@@ -53,10 +55,12 @@ class AppState extends ChangeNotifier {
     double? meatDairyHours,
     bool? candleLightingEnabled,
   }) async {
+    final isNewProfile = _progress.userName.isEmpty && name.isNotEmpty;
     _progress.userName = name;
     _progress.gender = gender;
     _progress.age = age;
     _progress.city = city;
+    if (isNewProfile) AnalyticsService.profileCreated(gender);
     if (nusach != null) _progress.nusach = nusach;
     if (maritalStatus != null) _progress.maritalStatus = maritalStatus;
     if (iluiNeshama != null) _progress.iluiNeshama = iluiNeshama;
@@ -93,6 +97,7 @@ class AppState extends ChangeNotifier {
     _progress.totalQuizAnswered += total;
     _progress.lastQuizDate = DateTime.now().toIso8601String().substring(0, 10);
     _progress.zuzim += zuzimEarned;
+    AnalyticsService.quizCompleted(correct, total);
     await _storage.saveProgress(_progress);
     notifyListeners();
   }
@@ -141,6 +146,7 @@ class AppState extends ChangeNotifier {
     if (_progress.earnedBadges.contains(badgeId)) return;
     _progress.earnedBadges.add(badgeId);
     _progress.zuzim += zuzimReward;
+    AnalyticsService.badgeEarned(badgeId);
     await _storage.saveProgress(_progress);
     notifyListeners();
   }
@@ -151,6 +157,7 @@ class AppState extends ChangeNotifier {
     _progress.dailyTracker[target] = !wasChecked;
     if (!wasChecked) {
       _progress.zuzim += 5;
+      AnalyticsService.trackerChecked(target);
     } else {
       _progress.zuzim = (_progress.zuzim - 5).clamp(0, _progress.zuzim);
     }

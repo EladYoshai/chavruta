@@ -4,6 +4,7 @@ import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/app_state.dart';
+import '../services/analytics_service.dart';
 import '../models/study_section.dart';
 import '../models/user_progress.dart';
 import '../services/sefaria_service.dart';
@@ -103,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCalendarInfo();
+    AnalyticsService.screenView('home');
   }
 
   Future<void> _loadCalendarInfo() async {
