@@ -688,18 +688,23 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
         duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
   }
 
-  void _scrollToSection(int index) async {
+  void _scrollToSection(int index) {
     final key = _sectionKeys[index];
     final ctx = key.currentContext;
-    if (ctx != null) {
-      _programmaticScroll = true;
-      setState(() => _activeIndex = index);
-      await Scrollable.ensureVisible(ctx,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-          alignmentPolicy: ScrollPositionAlignmentPolicy.explicit);
+    if (ctx == null) return;
+
+    _programmaticScroll = true;
+    setState(() => _activeIndex = index);
+    _scrollTabToIndex(index);
+
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+      alignment: 0.0, // scroll to top of viewport
+    ).then((_) {
       _programmaticScroll = false;
-    }
+    });
   }
 
   @override
