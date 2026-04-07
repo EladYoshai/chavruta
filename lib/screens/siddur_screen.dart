@@ -777,57 +777,70 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
     return text.replaceAll(RegExp(r'[\u0591-\u05C7]'), '');
   }
 
-  /// Apply seasonal text modifications to prayer segments
+  /// Apply seasonal text modifications to prayer segments.
+  /// Sefaria stores seasonal variants as SEPARATE array elements:
+  /// [i] = '<small>בקיץ:</small>'
+  /// [i+1] = 'מוֹרִיד הַטָּל'
+  /// [i+2] = '<small>בחורף:</small>'
+  /// [i+3] = 'מַשִּׁיב הָרֽוּחַ וּמוֹרִיד הַגֶּֽשֶׁם:'
   List<String> _applyTextModifications(List<String> segments, String prayerName,
       bool isMashiv, bool isYaaleh, String yaalehOccasion, String nusach) {
     final result = <String>[];
+    final noTachanun = !_shouldSayTachanun(_currentMonth, _currentDay,
+        _currentWeekday, _getTefilaType(widget.category.name), _isLeapYear);
 
-    for (final segment in segments) {
-      var modified = segment;
-      final stripped = _stripNikud(modified);
+    bool skipNext = false;
 
-      // === Handle Sefaria's dual-season format ===
-      // Sefaria shows BOTH options with <small>בחורף:</small> and <small>בקיץ:</small>
-      if (stripped.contains('בחורף') || stripped.contains('בקיץ')) {
+    for (int i = 0; i < segments.length; i++) {
+      if (skipNext) {
+        skipNext = false;
+        continue;
+      }
+
+      final segment = segments[i];
+      final stripped = _stripNikud(segment);
+      final strippedLower = stripped.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+      // === Season labels: remove the wrong season + its following segment ===
+      if (segment.contains('<small>') && strippedLower.contains('בקיץ')) {
         if (isMashiv) {
-          // Winter: remove summer option (מוריד הטל line with בקיץ)
-          modified = modified.replaceAll(RegExp(r'<small>בקיץ:?</small>[^<]*'), '');
-          modified = modified.replaceAll(RegExp(r'בקיץ:?\s*מוריד הטל'), '');
+          // Winter: skip the "בקיץ" label AND the next segment (מוריד הטל)
+          skipNext = true;
+          continue;
         } else {
-          // Summer: remove winter option (משיב הרוח line with בחורף)
-          modified = modified.replaceAll(RegExp(r'<small>בחורף:?</small>[^<]*'), '');
-          modified = modified.replaceAll(RegExp(r'בחורף:?\s*משיב הרוח ומוריד הגשם:?'), '');
-        }
-        // Also remove the season labels themselves
-        modified = modified.replaceAll(RegExp(r'<small>בקיץ:?</small>\s*'), '');
-        modified = modified.replaceAll(RegExp(r'<small>בחורף:?</small>\s*'), '');
-      }
-
-      // === Direct text swap (for texts without season labels) ===
-      if (!isMashiv && stripped.contains('משיב הרוח ומוריד הגשם')) {
-        if (nusach == 'ashkenaz') {
-          // Ashkenaz: remove entirely
-          modified = modified.replaceAll(RegExp(r'מ[ַּ]*שִּׁ?יב\s+ה[ָ]*ר[ֽ]*וּ?ח[ַ]*\s+וּ?מוֹ?רִיד\s+ה[ַ]*גּ[ֶּֽ]*שׁ?[ֶ]*ם:?'), '');
-        } else {
-          // Sefard/Edot HaMizrach: swap to morid hatal
-          modified = modified.replaceAll(RegExp(r'מ[ַּ]*שִּׁ?יב\s+ה[ָ]*ר[ֽ]*וּ?ח[ַ]*\s+וּ?מוֹ?רִיד\s+ה[ַ]*גּ[ֶּֽ]*שׁ?[ֶ]*ם:?'), 'מוֹרִיד הַטָּל');
+          // Summer: keep בקיץ content but skip the label itself
+          continue; // Skip the label, the next segment (מוריד הטל) will be kept
         }
       }
 
-      // === Remove viduy/tachanun sections from text ===
-      // Sefaria embeds these as text segments - remove segments containing viduy markers
-      if (!_shouldSayTachanun(_currentMonth, _currentDay, _currentWeekday,
-          _getTefilaType(widget.category.name), _isLeapYear)) {
-        if (stripped.contains('וידוי') || stripped.contains('נפילת אפים') ||
-            stripped.contains('אבינו מלכנו') || stripped.contains('סלח לנו') ||
-            stripped.contains('ואנחנו לא נדע')) {
-          // Skip this segment entirely (it's tachanun-related)
+      if (segment.contains('<small>') && strippedLower.contains('בחורף')) {
+        if (!isMashiv) {
+          // Summer: skip the "בחורף" label AND the next segment (משיב הרוח)
+          skipNext = true;
+          continue;
+        } else {
+          // Winter: keep בחורף content but skip the label itself
+          continue; // Skip the label, the next segment (משיב הרוח) will be kept
+        }
+      }
+
+      // === Skip halachic notes (טעה ולא אמר) ===
+      if (segment.contains('<small>') && (strippedLower.contains('טעה') ||
+          strippedLower.contains('הערה') || strippedLower.contains('אם שכח'))) {
+        continue;
+      }
+
+      // === Remove viduy/tachanun segments on days without tachanun ===
+      if (noTachanun) {
+        if (strippedLower.contains('וידוי') || strippedLower.contains('נפילת אפים') ||
+            strippedLower.contains('תחנון') || strippedLower.contains('סלח לנו') ||
+            strippedLower.contains('ואנחנו לא נדע')) {
           continue;
         }
       }
 
-      if (modified.trim().isNotEmpty) {
-        result.add(modified);
+      if (segment.trim().isNotEmpty) {
+        result.add(segment);
       }
     }
 
