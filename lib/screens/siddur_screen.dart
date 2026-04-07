@@ -1573,12 +1573,22 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     _ => char,
   };
 
+  // Extract only Hebrew letters (U+05D0 to U+05EA)
+  List<String> _extractHebrew(String text) {
+    final letters = <String>[];
+    for (final char in text.split('')) {
+      final code = char.codeUnitAt(0);
+      if (code >= 0x05D0 && code <= 0x05EA) letters.add(char);
+    }
+    return letters;
+  }
+
   void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
     final nameLetters = <String>[];
-    for (final char in name.split('')) {
+    for (final char in _extractHebrew(name)) {
       final n = _normalize(char);
       if (_letterToVerseStart.containsKey(n) && !nameLetters.contains(n)) {
         nameLetters.add(n);
@@ -1586,7 +1596,7 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
     }
 
     final neshmaLetters = <String>[];
-    for (final char in 'נשמה'.split('')) {
+    for (final char in _extractHebrew('נשמה')) {
       final n = _normalize(char);
       if (_letterToVerseStart.containsKey(n) && !neshmaLetters.contains(n)) {
         neshmaLetters.add(n);
@@ -1954,13 +1964,29 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
     'ך' => 'כ', 'ם' => 'מ', 'ן' => 'נ', 'ף' => 'פ', 'ץ' => 'צ', _ => c,
   };
 
+  // Extract only Hebrew letters from text (strips nikud, spaces, punctuation, direction marks)
+  List<String> _extractHebrewLetters(String text) {
+    final letters = <String>[];
+    for (final char in text.split('')) {
+      final code = char.codeUnitAt(0);
+      // Hebrew letters: U+05D0 (א) to U+05EA (ת)
+      if (code >= 0x05D0 && code <= 0x05EA) {
+        letters.add(char);
+      }
+    }
+    return letters;
+  }
+
   void _calculate() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
+    // Extract only Hebrew letters (ignore nikud, spaces, direction marks)
+    final nameLetters = _extractHebrewLetters(name);
+
     final nameMish = <(String, String, String)>[];
     final seen = <String>{};
-    for (final char in name.split('')) {
+    for (final char in nameLetters) {
       final n = _norm(char);
       final entry = _letterToMishna[n];
       if (entry != null && !seen.contains(n)) {
@@ -1969,9 +1995,10 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
       }
     }
 
+    final neshamaLetters = _extractHebrewLetters('נשמה');
     final neshamaMish = <(String, String, String)>[];
     final seenN = <String>{};
-    for (final char in 'נשמה'.split('')) {
+    for (final char in neshamaLetters) {
       final n = _norm(char);
       final entry = _letterToMishna[n];
       if (entry != null && !seenN.contains(n)) {
