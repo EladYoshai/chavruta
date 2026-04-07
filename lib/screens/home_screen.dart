@@ -21,6 +21,7 @@ import 'quiz_screen.dart';
 import 'achievements_screen.dart';
 import 'shop_screen.dart';
 import 'siddur_screen.dart';
+import 'tehillim_screen.dart';
 import 'women_screen.dart';
 import 'siyum_yahrzeit_screen.dart';
 import 'bookmarks_screen.dart';
@@ -452,6 +453,61 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ),
                               const Icon(Icons.arrow_back_ios,
                                   color: Color(0xFF1B5E20), size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Tehillim
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TehillimScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF1565C0).withValues(alpha: 0.1),
+                              const Color(0xFF1565C0).withValues(alpha: 0.06),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF1565C0).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.auto_stories,
+                                  color: Color(0xFF1565C0), size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'תהילים',
+                                  style: GoogleFonts.rubik(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.darkBrown,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_back_ios,
+                                  color: Color(0xFF1565C0), size: 16),
                             ],
                           ),
                         ),
