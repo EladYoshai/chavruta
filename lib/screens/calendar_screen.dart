@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -164,8 +163,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _loadZmanim() async {
     try {
       Position position;
-      if (kIsWeb) {
-        // Web: skip GPS, use Jerusalem default
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requested = await Geolocator.requestPermission();
+          if (requested == LocationPermission.denied ||
+              requested == LocationPermission.deniedForever) {
+            throw Exception('no permission');
+          }
+        }
+        if (permission == LocationPermission.deniedForever) {
+          throw Exception('no permission');
+        }
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+            timeLimit: Duration(seconds: 10),
+          ),
+        );
+        _locationName = await _reverseGeocode(position.latitude, position.longitude);
+      } catch (_) {
+        // Fallback to Jerusalem if GPS fails or denied
         position = Position(
           latitude: 31.7683,
           longitude: 35.2137,
@@ -179,38 +197,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           headingAccuracy: 0,
         );
         _locationName = 'ירושלים (ברירת מחדל)';
-      } else {
-        try {
-          final permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.denied) {
-            final requested = await Geolocator.requestPermission();
-            if (requested == LocationPermission.denied ||
-                requested == LocationPermission.deniedForever) {
-              throw Exception('no permission');
-            }
-          }
-          position = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.low,
-              timeLimit: Duration(seconds: 10),
-            ),
-          );
-          _locationName = await _reverseGeocode(position.latitude, position.longitude);
-        } catch (_) {
-          position = Position(
-            latitude: 31.7683,
-            longitude: 35.2137,
-            timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 800,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
-          );
-          _locationName = 'ירושלים (ברירת מחדל)';
-        }
       }
 
       final geoLocation = GeoLocation.setLocation(
