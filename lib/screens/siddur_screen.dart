@@ -101,6 +101,16 @@ class _SiddurScreenState extends State<SiddurScreen> {
                   _buildSectionHeader('תפילות'),
                   ..._buildMainTefilot(context, dayInfo),
 
+                  // Musaf - show on days that need it
+                  if (dayInfo != null && (dayInfo.isShabbat || dayInfo.isRoshChodesh ||
+                      dayInfo.isCholHamoed || dayInfo.isYomTov))
+                    _buildSimpleCard(context, '📜', 'מוסף',
+                        dayInfo.isShabbatRoshChodesh ? 'מוסף שבת ראש חודש (אתה יצרת)'
+                        : dayInfo.isCholHamoed ? 'מוסף לחול המועד'
+                        : dayInfo.isShabbat ? 'מוסף שבת'
+                        : 'מוסף',
+                        _getMusafMainRef(nusach, dayInfo)),
+
                   // Omer - only during season
                   if (dayInfo != null && dayInfo.isOmerSeason) ...[
                     _buildOmerCard(context, nusach, dayInfo),
@@ -565,6 +575,14 @@ class _SiddurScreenState extends State<SiddurScreen> {
     _ => 'Siddur_Sefard,_Various_Blessings,_Circumcision',
   };
 
+  String _getMusafMainRef(String nusach, SiddurDayInfo? dayInfo) {
+    return switch (nusach) {
+      'ashkenaz' => 'Siddur_Ashkenaz,_Shabbat,_Musaf_LeShabbat',
+      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Shabbat_Mussaf',
+      _ => 'Siddur_Sefard,_Musaf',
+    };
+  }
+
   String _getTefilatHaderechRef(String nusach) => switch (nusach) {
     'ashkenaz' => 'Siddur_Ashkenaz,_Berachot,_Tefillat_HaDerech',
     'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Assorted_Blessings_and_Prayers,_Traveler%27s_Prayer',
@@ -591,6 +609,10 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
 
   // Modified prayer list (after decision tree filtering)
   List<PrayerItem> _filteredItems = [];
+  int _currentMonth = 0;
+  int _currentDay = 0;
+  int _currentWeekday = 0;
+  bool _isLeapYear = false;
   List<List<String>> _prayerTexts = [];
   List<GlobalKey> _sectionKeys = [];
   int _activeIndex = 0;
@@ -615,6 +637,11 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
     final jewishCal = JewishCalendar.fromDateTime(now);
     final month = jewishCal.getJewishMonth();
     final day = jewishCal.getJewishDayOfMonth();
+
+    _currentMonth = month;
+    _currentDay = day;
+    _currentWeekday = now.weekday;
+    _isLeapYear = jewishCal.isJewishLeapYear();
 
     // Determine tefila type from category name
     final tefilaType = _getTefilaType(widget.category.name);
@@ -744,6 +771,12 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
     return false;
   }
 
+  /// Strip all Hebrew nikud/diacritics for comparison
+  String _stripNikud(String text) {
+    // Remove Unicode nikud range (0x0591-0x05C7)
+    return text.replaceAll(RegExp(r'[\u0591-\u05C7]'), '');
+  }
+
   /// Apply seasonal text modifications to prayer segments
   List<String> _applyTextModifications(List<String> segments, String prayerName,
       bool isMashiv, bool isYaaleh, String yaalehOccasion, String nusach) {
@@ -751,25 +784,51 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
 
     for (final segment in segments) {
       var modified = segment;
+      final stripped = _stripNikud(modified);
 
-      // === Swap mashiv haruach / morid hatal ===
-      if (!isMashiv) {
-        // Summer: remove mashiv haruach, add morid hatal (for sefard/edot hamizrach)
-        if (modified.contains('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם') ||
-            modified.contains('משיב הרוח ומוריד הגשם')) {
-          if (nusach == 'ashkenaz') {
-            modified = modified
-                .replaceAll('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם', '')
-                .replaceAll('משיב הרוח ומוריד הגשם', '');
-          } else {
-            modified = modified
-                .replaceAll('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם', 'מוֹרִיד הַטָּל')
-                .replaceAll('משיב הרוח ומוריד הגשם', 'מוריד הטל');
-          }
+      // === Handle Sefaria's dual-season format ===
+      // Sefaria shows BOTH options with <small>בחורף:</small> and <small>בקיץ:</small>
+      if (stripped.contains('בחורף') || stripped.contains('בקיץ')) {
+        if (isMashiv) {
+          // Winter: remove summer option (מוריד הטל line with בקיץ)
+          modified = modified.replaceAll(RegExp(r'<small>בקיץ:?</small>[^<]*'), '');
+          modified = modified.replaceAll(RegExp(r'בקיץ:?\s*מוריד הטל'), '');
+        } else {
+          // Summer: remove winter option (משיב הרוח line with בחורף)
+          modified = modified.replaceAll(RegExp(r'<small>בחורף:?</small>[^<]*'), '');
+          modified = modified.replaceAll(RegExp(r'בחורף:?\s*משיב הרוח ומוריד הגשם:?'), '');
+        }
+        // Also remove the season labels themselves
+        modified = modified.replaceAll(RegExp(r'<small>בקיץ:?</small>\s*'), '');
+        modified = modified.replaceAll(RegExp(r'<small>בחורף:?</small>\s*'), '');
+      }
+
+      // === Direct text swap (for texts without season labels) ===
+      if (!isMashiv && stripped.contains('משיב הרוח ומוריד הגשם')) {
+        if (nusach == 'ashkenaz') {
+          // Ashkenaz: remove entirely
+          modified = modified.replaceAll(RegExp(r'מ[ַּ]*שִּׁ?יב\s+ה[ָ]*ר[ֽ]*וּ?ח[ַ]*\s+וּ?מוֹ?רִיד\s+ה[ַ]*גּ[ֶּֽ]*שׁ?[ֶ]*ם:?'), '');
+        } else {
+          // Sefard/Edot HaMizrach: swap to morid hatal
+          modified = modified.replaceAll(RegExp(r'מ[ַּ]*שִּׁ?יב\s+ה[ָ]*ר[ֽ]*וּ?ח[ַ]*\s+וּ?מוֹ?רִיד\s+ה[ַ]*גּ[ֶּֽ]*שׁ?[ֶ]*ם:?'), 'מוֹרִיד הַטָּל');
         }
       }
 
-      result.add(modified);
+      // === Remove viduy/tachanun sections from text ===
+      // Sefaria embeds these as text segments - remove segments containing viduy markers
+      if (!_shouldSayTachanun(_currentMonth, _currentDay, _currentWeekday,
+          _getTefilaType(widget.category.name), _isLeapYear)) {
+        if (stripped.contains('וידוי') || stripped.contains('נפילת אפים') ||
+            stripped.contains('אבינו מלכנו') || stripped.contains('סלח לנו') ||
+            stripped.contains('ואנחנו לא נדע')) {
+          // Skip this segment entirely (it's tachanun-related)
+          continue;
+        }
+      }
+
+      if (modified.trim().isNotEmpty) {
+        result.add(modified);
+      }
     }
 
     // === Insert יעלה ויבוא after רצה (if needed) ===
