@@ -43,8 +43,9 @@ class UserProgress {
   // Marital status (for women - mikvah feature)
   String maritalStatus; // '', 'single', 'married'
 
-  // Dedication
-  String iluiNeshama; // לעילוי נשמת text
+  // Dedications
+  String iluiNeshama; // לעילוי נשמת text (legacy, kept for compatibility)
+  List<String> dedications; // Multiple dedications (לעילוי נשמת, זיווג, רפואה, פרנסה)
 
   // Omer reminder
   bool omerReminderEnabled;
@@ -99,6 +100,7 @@ class UserProgress {
     this.encouragementLevel = 'medium',
     this.maritalStatus = '',
     this.iluiNeshama = '',
+    List<String>? dedications,
     this.omerReminderEnabled = false,
     this.omerReminderTime = '20:00',
     this.candleLightingEnabled = false,
@@ -129,6 +131,7 @@ class UserProgress {
               'nach_yomi': false,
               'peninei_halacha': false,
             },
+        dedications = dedications ?? [],
         minhagOverrides = minhagOverrides ?? {},
         reminderDays = reminderDays ?? [0, 1, 2, 3, 4], // Sun-Thu default
         dailyTracker = dailyTracker ?? _defaultDailyTracker(),
@@ -252,6 +255,7 @@ class UserProgress {
         'encouragementLevel': encouragementLevel,
         'maritalStatus': maritalStatus,
         'iluiNeshama': iluiNeshama,
+        'dedications': dedications,
         'omerReminderEnabled': omerReminderEnabled,
         'omerReminderTime': omerReminderTime,
         'candleLightingEnabled': candleLightingEnabled,
@@ -306,6 +310,9 @@ class UserProgress {
         encouragementLevel: json['encouragementLevel'] ?? 'medium',
         maritalStatus: json['maritalStatus'] ?? '',
         iluiNeshama: json['iluiNeshama'] ?? '',
+        dedications: json['dedications'] != null
+            ? List<String>.from(json['dedications'])
+            : null,
         omerReminderEnabled: json['omerReminderEnabled'] ?? false,
         omerReminderTime: json['omerReminderTime'] ?? '20:00',
         candleLightingEnabled: json['candleLightingEnabled'] ?? false,

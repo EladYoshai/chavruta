@@ -818,14 +818,18 @@ class _StudyScreenState extends State<StudyScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // לעילוי נשמת dedication
+            // Dedications
             Builder(builder: (ctx) {
-              final ilui = ctx.read<AppState>().progress.iluiNeshama;
-              if (ilui.isEmpty) return const SizedBox.shrink();
+              final progress = ctx.read<AppState>().progress;
+              final allDedications = <String>[
+                if (progress.iluiNeshama.isNotEmpty) 'לעילוי נשמת ${progress.iluiNeshama}',
+                ...progress.dedications,
+              ];
+              if (allDedications.isEmpty) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'הלימוד מוקדש לעילוי נשמת $ilui',
+                  'הלימוד מוקדש: ${allDedications.join(" • ")}',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.rubik(
                     fontSize: 14,

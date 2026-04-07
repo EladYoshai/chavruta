@@ -66,6 +66,7 @@ class AppState extends ChangeNotifier {
     bool? streakReminderPush,
     bool? meatDairyReminderPush,
     String? encouragementLevel,
+    List<String>? dedications,
   }) async {
     final isNewProfile = _progress.userName.isEmpty && name.isNotEmpty;
     _progress.userName = name;
@@ -104,6 +105,7 @@ class AppState extends ChangeNotifier {
     if (streakReminderPush != null) _progress.streakReminderPush = streakReminderPush;
     if (meatDairyReminderPush != null) _progress.meatDairyReminderPush = meatDairyReminderPush;
     if (encouragementLevel != null) _progress.encouragementLevel = encouragementLevel;
+    if (dedications != null) _progress.dedications = dedications;
     await _storage.saveProgress(_progress);
     _syncToCloud();
     notifyListeners();

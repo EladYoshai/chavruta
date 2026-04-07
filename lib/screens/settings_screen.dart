@@ -20,6 +20,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _ageController = TextEditingController();
   final _cityController = TextEditingController();
   final _iluiController = TextEditingController();
+  List<String> _dedications = [];
+  bool _showSaveFeedback = false;
   String _selectedGender = '';
   String _selectedNusach = 'ashkenaz';
   int _dailyGoal = 5;
@@ -61,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       hour: int.tryParse(omerParts[0]) ?? 20,
       minute: int.tryParse(omerParts.length > 1 ? omerParts[1] : '0') ?? 0,
     );
+    _dedications = List<String>.from(progress.dedications);
     _maritalStatus = progress.maritalStatus;
     _meatDairyHours = progress.meatDairyHours.toDouble();
     _candleLightingEnabled = progress.candleLightingEnabled;
@@ -72,6 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    // Auto-save when leaving settings
+    _save();
     _nameController.dispose();
     _ageController.dispose();
     _cityController.dispose();
@@ -102,6 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       streakReminderPush: _streakReminderPush,
       meatDairyReminderPush: _meatDairyReminderPush,
       encouragementLevel: _encouragementLevel,
+      dedications: _dedications,
     );
 
     // Update notification schedule (mobile only)
@@ -142,7 +148,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
-    if (mounted) {
+    // Only show UI feedback if still mounted (not called from dispose)
+    if (mounted && _showSaveFeedback) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Directionality(
@@ -207,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               : 'assets/images/avatars/default_male.png',
                           width: 100,
                           height: 100,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -306,13 +313,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Ilui Neshama
-              _buildLabel('לעילוי נשמת'),
+              // Dedications (הקדשות)
+              _buildLabel('הקדשות ותפילות'),
               const SizedBox(height: 8),
-              _buildTextField(
-                controller: _iluiController,
-                hint: 'שם הנפטר/ת (לא חובה)',
-                icon: Icons.favorite_border,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    // Existing dedications
+                    ..._dedications.asMap().entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.favorite, color: AppColors.darkGold, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(e.value,
+                              style: GoogleFonts.rubik(fontSize: 14, color: AppColors.darkBrown))),
+                          GestureDetector(
+                            onTap: () => setState(() => _dedications.removeAt(e.key)),
+                            child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )),
+                    // Add new dedication
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _buildDedicationChip('🕯️ לעילוי נשמת'),
+                        _buildDedicationChip('💍 לזיווג הגון'),
+                        _buildDedicationChip('💊 לרפואה שלמה'),
+                        _buildDedicationChip('💰 לפרנסה טובה'),
+                        _buildDedicationChip('👶 לזרע של קיימא'),
+                        _buildDedicationChip('🙏 להצלחה'),
+                        _buildDedicationChip('🛡️ לשמירה והגנה'),
+                        _buildDedicationChip('✏️ הקדשה אישית'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -753,7 +799,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _save,
+                  onPressed: () {
+                    _showSaveFeedback = true;
+                    _save();
+                  },
                   icon: const Icon(Icons.save),
                   label: Text(
                     'שמור הגדרות',
@@ -924,7 +973,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
-              child: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.cover),
+              child: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.contain),
             ),
             const SizedBox(height: 6),
             Text(
@@ -1069,6 +1118,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : AppColors.darkBrown,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDedicationChip(String type) {
+    return GestureDetector(
+      onTap: () {
+        if (type == '✏️ הקדשה אישית') {
+          _showCustomDedicationDialog();
+        } else {
+          _showDedicationNameDialog(type);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.parchment,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add, size: 14, color: AppColors.darkGold),
+            const SizedBox(width: 4),
+            Text(type, style: GoogleFonts.rubik(fontSize: 12, color: AppColors.darkBrown)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDedicationNameDialog(String type) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Text(type, style: GoogleFonts.rubik(fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            textDirection: TextDirection.rtl,
+            autofocus: true,
+            style: GoogleFonts.rubik(fontSize: 16),
+            decoration: InputDecoration(
+              hintText: 'הכנס שם',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ביטול')),
+            TextButton(
+              onPressed: () {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  setState(() => _dedications.add('$type - $name'));
+                }
+                Navigator.pop(ctx);
+              },
+              child: Text('הוסף', style: GoogleFonts.rubik(fontWeight: FontWeight.bold, color: AppColors.deepBlue)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCustomDedicationDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Text('הקדשה אישית', style: GoogleFonts.rubik(fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            textDirection: TextDirection.rtl,
+            autofocus: true,
+            style: GoogleFonts.rubik(fontSize: 16),
+            decoration: InputDecoration(
+              hintText: 'כתוב הקדשה חופשית',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ביטול')),
+            TextButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                if (text.isNotEmpty) {
+                  setState(() => _dedications.add(text));
+                }
+                Navigator.pop(ctx);
+              },
+              child: Text('הוסף', style: GoogleFonts.rubik(fontWeight: FontWeight.bold, color: AppColors.deepBlue)),
+            ),
+          ],
         ),
       ),
     );
