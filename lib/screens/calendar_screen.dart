@@ -219,8 +219,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final isErevSukkot = month == 7 && day == 14;
       final isErevShavuot = month == 3 && day == 5;
       final isErevRoshHashana = month == 6 && day == 29;
+      final isErevShviiPesach = month == 1 && day == 20;
+      final isErevShminiAtzeret = month == 7 && day == 21;
       final isErevYomTov = isErevSukkot || isErevShavuot || isErevRoshHashana ||
-          (month == 1 && day == 14) || (month == 7 && day == 21);
+          isErevPesach || isErevShviiPesach || isErevShminiAtzeret;
+      // Is today a Yom Tov (for exit time display)
+      final isYomTov = (month == 1 && (day == 15 || day == 21)) || // Pesach
+          (month == 7 && (day == 1 || day == 2 || day == 10 || day == 15 || day == 22)) || // RH, YK, Sukkot, SA
+          (month == 3 && day == 6); // Shavuot
       final isChanukah = (month == 9 && day >= 25) || (month == 10 && day <= 2);
       final isFastDay = (month == 7 && day == 3) || (month == 10 && day == 10) ||
           (month == 12 && day == 13) || (month == 4 && day == 17) || (month == 5 && day == 9);
@@ -265,11 +271,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _addZman(zmanim, '✡️ כניסת שבת', zmanimCalendar.getCandleLighting());
       }
 
+      // Erev Yom Tov - Chag entry (not Friday which is already Shabbat)
+      if (isErevYomTov && !isFriday) {
+        String chagName = 'החג';
+        if (isErevPesach) chagName = 'פסח';
+        if (isErevShviiPesach) chagName = 'שביעי של פסח';
+        if (isErevSukkot) chagName = 'סוכות';
+        if (isErevShminiAtzeret) chagName = 'שמיני עצרת';
+        if (isErevShavuot) chagName = 'שבועות';
+        if (isErevRoshHashana) chagName = 'ראש השנה';
+        _addZman(zmanim, '🕯️ כניסת $chagName', zmanimCalendar.getCandleLighting());
+      }
+
       _addZman(zmanim, 'צאת הכוכבים', zmanimCalendar.getTzais());
 
       // Motzei Shabbat
       if (isSaturday) {
         _addZman(zmanim, '✡️ יציאת שבת (ר"ת)', zmanimCalendar.getTzais72());
+      }
+
+      // Motzei Yom Tov (exit time)
+      if (isYomTov && !isFriday) {
+        String chagName = 'החג';
+        if (month == 1 && day == 15) chagName = 'פסח';
+        if (month == 1 && day == 21) chagName = 'שביעי של פסח';
+        if (month == 7 && (day == 1 || day == 2)) chagName = 'ראש השנה';
+        if (month == 7 && day == 10) chagName = 'יום כיפור';
+        if (month == 7 && day == 15) chagName = 'סוכות';
+        if (month == 7 && day == 22) chagName = 'שמיני עצרת';
+        if (month == 3 && day == 6) chagName = 'שבועות';
+        _addZman(zmanim, '✡️ יציאת $chagName', zmanimCalendar.getTzais72());
       }
 
       // Fast day times

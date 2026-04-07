@@ -5,6 +5,38 @@ import '../services/sefaria_service.dart';
 import '../utils/constants.dart';
 import '../widgets/torah_text_viewer.dart';
 
+/// Convert number to Hebrew gematria string
+String _toHebrew(int n) {
+  if (n <= 0) return '';
+  const hundreds = ['', 'ק', 'ר'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+
+  if (n == 15) return 'ט"ו';
+  if (n == 16) return 'ט"ז';
+
+  String result = '';
+  if (n >= 100) {
+    result += hundreds[n ~/ 100];
+    n %= 100;
+  }
+  if (n >= 10) {
+    result += tens[n ~/ 10];
+    n %= 10;
+  }
+  if (n > 0) {
+    result += ones[n];
+  }
+
+  // Add geresh/gershayim
+  if (result.length == 1) {
+    result += "'";
+  } else if (result.length > 1) {
+    result = '${result.substring(0, result.length - 1)}"${result.substring(result.length - 1)}';
+  }
+  return result;
+}
+
 class TehillimScreen extends StatelessWidget {
   const TehillimScreen({super.key});
 
@@ -178,7 +210,7 @@ class _FullTehillimScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
                 child: Text(
-                  '$bookName (פרקים $start-$end)',
+                  '$bookName (פרקים ${_toHebrew(start)}-${_toHebrew(end)})',
                   style: GoogleFonts.rubik(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -204,7 +236,7 @@ class _FullTehillimScreen extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          '$chapter',
+                          _toHebrew(chapter),
                           style: GoogleFonts.rubik(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -332,7 +364,7 @@ class _TikkunKlaliScreenState extends State<_TikkunKlaliScreen> {
   Future<void> _load() async {
     final texts = <String>[];
     for (final ch in _chapters) {
-      texts.add('--- פרק $ch ---');
+      texts.add('--- פרק ${_toHebrew(ch)} ---');
       try {
         final data = await _sefaria.getText('Psalms.$ch');
         final versions = data['versions'] as List?;
@@ -485,7 +517,7 @@ class _TehillimChapterScreenState extends State<_TehillimChapterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('תהילים פרק ${widget.chapter}'),
+        title: Text('תהילים פרק ${_toHebrew(widget.chapter)}'),
         backgroundColor: const Color(0xFF1565C0),
         leading: IconButton(
           icon: const Icon(Icons.arrow_forward),
@@ -526,7 +558,7 @@ class _TehillimChapterScreenState extends State<_TehillimChapterScreen> {
                       children: [
                         Center(
                           child: Text(
-                            'פרק ${widget.chapter}',
+                            'פרק ${_toHebrew(widget.chapter)}',
                             style: GoogleFonts.rubik(
                               fontSize: 20, fontWeight: FontWeight.bold,
                               color: const Color(0xFF1565C0)),
