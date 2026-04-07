@@ -25,20 +25,29 @@ class ShopItem {
 
 const List<ShopItem> shopItems = [
   // === Avatars - People ===
-  ShopItem(id: 'kohen_gadol', emoji: '', name: 'כהן גדול', description: 'כהן גדול בבגדי זהב', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/kohen_gadol.png'),
-  ShopItem(id: 'rebbetzin', emoji: '', name: 'הרבנית', description: 'רבנית עם נרות שבת', price: 50, category: 'avatar', imagePath: 'assets/images/avatars/rebbetzin.png'),
+  // Tier 1 - Entry (75 זוזים) - male/female same price
   ShopItem(id: 'talmid_chacham', emoji: '', name: 'תלמיד חכם', description: 'תלמיד חכם עם גמרא', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/talmid_chacham.png'),
   ShopItem(id: 'chacham_sefardi', emoji: '', name: 'חכם ספרדי', description: 'חכם עם קולמוס וקלף', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/chacham_sefardi.png'),
-  ShopItem(id: 'morenu_verabenu', emoji: '', name: 'מורינו ורבינו', description: 'מורה תורה בבית המדרש', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/morenu_verabenu.png'),
-  ShopItem(id: 'tzaddik_nistar', emoji: '', name: 'צדיק נסתר', description: 'צדיק נסתר ברחוב', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/tzaddik_nistar.png'),
-  ShopItem(id: 'tzaddeket', emoji: '', name: 'צדיקה', description: 'צדיקה בגן של אור', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/tzaddeket.png'),
-  ShopItem(id: 'gavra_raba', emoji: '', name: 'גברא רבא', description: 'רב שקוע בלימוד הספרים', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/gavra_raba.png'),
-  ShopItem(id: 'navi', emoji: '', name: 'נביא', description: 'נביא עם הילה זהובה', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/navi.png'),
-  ShopItem(id: 'amora', emoji: '', name: 'אמורא', description: 'אמורא בין הספרים העתיקים', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/amora.png'),
-  ShopItem(id: 'lamdan', emoji: '', name: 'למדן', description: 'למדן בספריה חמה', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/lamdan.png'),
-  ShopItem(id: 'neviah', emoji: '', name: 'נביאה', description: 'נביאה עם מגילות ואור', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/neviah.png'),
-  ShopItem(id: 'eshet_chayil', emoji: '', name: 'אשת חייל', description: 'אשת חייל - צניעות ומסורת', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/eshet_chayil.png'),
-  ShopItem(id: 'shakdanit', emoji: '', name: 'שקדנית', description: 'שקדנית בספריה', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/shakdanit.png'),
+  ShopItem(id: 'rebbetzin', emoji: '', name: 'הרבנית', description: 'רבנית עם נרות שבת', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/rebbetzin.png'),
+  ShopItem(id: 'shakdanit', emoji: '', name: 'שקדנית', description: 'שקדנית בספריה', price: 75, category: 'avatar', imagePath: 'assets/images/avatars/shakdanit.png'),
+
+  // Tier 2 - Intermediate (120 זוזים)
+  ShopItem(id: 'morenu_verabenu', emoji: '', name: 'מורינו ורבינו', description: 'מורה תורה בבית המדרש', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/morenu_verabenu.png'),
+  ShopItem(id: 'gavra_raba', emoji: '', name: 'גברא רבא', description: 'רב שקוע בלימוד הספרים', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/gavra_raba.png'),
+  ShopItem(id: 'eshet_chayil', emoji: '', name: 'אשת חייל', description: 'אשת חייל - צניעות ומסורת', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/eshet_chayil.png'),
+  ShopItem(id: 'lamdan', emoji: '', name: 'תנא', description: 'תנא בין הספרים העתיקים', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/lamdan.png'),
+
+  // Tier 3 - Advanced (150 זוזים) - צדיק/צדיקה same price
+  ShopItem(id: 'tzaddik_nistar', emoji: '', name: 'צדיק נסתר', description: 'צדיק נסתר ברחוב', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/tzaddik_nistar.png'),
+  ShopItem(id: 'tzaddeket', emoji: '', name: 'צדיקה', description: 'צדיקה בגן של אור', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/tzaddeket.png'),
+  ShopItem(id: 'amora', emoji: '', name: 'אמורא', description: 'אמורא בין הספרים העתיקים', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/amora.png'),
+
+  // Tier 4 - High (200 זוזים) - נביא/נביאה same price
+  ShopItem(id: 'navi', emoji: '', name: 'נביא', description: 'נביא עם הילה זהובה', price: 200, category: 'avatar', imagePath: 'assets/images/avatars/navi.png'),
+  ShopItem(id: 'neviah', emoji: '', name: 'נביאה', description: 'נביאה עם מגילות ואור', price: 200, category: 'avatar', imagePath: 'assets/images/avatars/neviah.png'),
+
+  // Tier 5 - Premium (300 זוזים) - highest קדושה
+  ShopItem(id: 'kohen_gadol', emoji: '', name: 'כהן גדול', description: 'כהן גדול בבגדי זהב', price: 300, category: 'avatar', imagePath: 'assets/images/avatars/kohen_gadol.png'),
 
   // === Avatars - Foods (3D images) ===
   ShopItem(id: 'jachnun', emoji: '', name: "ג'חנון", description: "ג'חנון חם בשבת בבוקר!", price: 90, category: 'avatar', imagePath: 'assets/images/avatars/jachnun.png'),
