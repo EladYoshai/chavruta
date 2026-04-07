@@ -40,5 +40,131 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+
+  <!-- ============================================ -->
+  <!-- Firebase Cloud Messaging - Push Notifications -->
+  <!-- ============================================ -->
+  <script type="module">
+    // Import Firebase SDK v9+
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+    import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCBn-LugNq3tlzHi-W-maIfMylK-lKDBuk',
+      authDomain: 'chavroota-6c454.firebaseapp.com',
+      projectId: 'chavroota-6c454',
+      storageBucket: 'chavroota-6c454.firebasestorage.app',
+      messagingSenderId: '547246231621',
+      appId: '1:547246231621:web:48edf32de0acac1e90532c',
+    };
+
+    // VAPID key for web push
+    const VAPID_KEY = 'BMqBYnqNLgUGrRj8CMnBYQInR8aNphnr1_i4s0zrJgi8zdadB30ODHPA4PWjzZY4U4C5m4GUUE5Bsl9UpwIOdI0';
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig, 'fcm-app');
+    const messaging = getMessaging(app);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Register service worker for background notifications
+    async function registerSW() {
+      try {
+        const reg = await navigator.serviceWorker.register('/chavruta/firebase-messaging-sw.js');
+        console.log('[FCM] Service worker registered:', reg.scope);
+        return reg;
+      } catch (err) {
+        console.log('[FCM] SW registration failed:', err);
+        return null;
+      }
+    }
+
+    // Request notification permission and get FCM token
+    async function requestPermissionAndGetToken() {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          console.log('[FCM] Permission denied');
+          return null;
+        }
+
+        // Get the service worker registration
+        const swReg = await navigator.serviceWorker.ready;
+
+        // Get FCM token
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg,
+        });
+
+        console.log('[FCM] Token:', token);
+        return token;
+      } catch (err) {
+        console.error('[FCM] Error getting token:', err);
+        return null;
+      }
+    }
+
+    // Save token to Firestore
+    async function saveTokenToFirestore(token) {
+      try {
+        // Sign in anonymously to get a user ID
+        const userCred = await signInAnonymously(auth);
+        const uid = userCred.user.uid;
+
+        // Save token under the user's document
+        await setDoc(doc(db, 'push_tokens', uid), {
+          token: token,
+          platform: 'web',
+          createdAt: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+        }, { merge: true });
+
+        console.log('[FCM] Token saved to Firestore for user:', uid);
+      } catch (err) {
+        console.error('[FCM] Error saving token:', err);
+      }
+    }
+
+    // Handle foreground messages (when app is open)
+    onMessage(messaging, (payload) => {
+      console.log('[FCM] Foreground message:', payload);
+      // Show a notification even when app is in foreground
+      if (Notification.permission === 'granted') {
+        new Notification(payload.notification?.title || 'חברותא', {
+          body: payload.notification?.body || '',
+          icon: '/icons/Icon-192.png',
+          dir: 'rtl',
+          lang: 'he',
+        });
+      }
+    });
+
+    // Main initialization
+    async function initFCM() {
+      // Only run on supported browsers
+      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        console.log('[FCM] Push not supported');
+        return;
+      }
+
+      // Register service worker
+      await registerSW();
+
+      // Small delay to let Flutter load first
+      setTimeout(async () => {
+        const token = await requestPermissionAndGetToken();
+        if (token) {
+          await saveTokenToFirestore(token);
+        }
+      }, 3000);
+    }
+
+    // Start
+    initFCM();
+  </script>
 </body>
 </html>
