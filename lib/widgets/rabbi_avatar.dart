@@ -9,6 +9,7 @@ class AvatarAssets {
   static const String defaultFemale = 'assets/images/avatars/rebbetzin.png';
 
   static const Map<String, String> imageAvatars = {
+    // People
     'kohen_gadol': 'assets/images/avatars/kohen_gadol.png',
     'rebbetzin': 'assets/images/avatars/rebbetzin.png',
     'talmid_chacham': 'assets/images/avatars/talmid_chacham.png',
@@ -17,6 +18,23 @@ class AvatarAssets {
     'tzaddik_nistar': 'assets/images/avatars/tzaddik_nistar.png',
     'tzaddeket': 'assets/images/avatars/tzaddeket.png',
     'gavra_raba': 'assets/images/avatars/gavra_raba.png',
+    'navi': 'assets/images/avatars/navi.png',
+    'amora': 'assets/images/avatars/amora.png',
+    'lamdan': 'assets/images/avatars/lamdan.png',
+    // Foods
+    'jachnun': 'assets/images/avatars/jachnun.png',
+    'gefilte_fish': 'assets/images/avatars/gefilte_fish.png',
+    'sufganiya': 'assets/images/avatars/sufganiya.png',
+    'cholent': 'assets/images/avatars/cholent.png',
+    'falafel': 'assets/images/avatars/falafel.png',
+    'kubeh': 'assets/images/avatars/kubeh.png',
+    'bourekas': 'assets/images/avatars/bourekas.png',
+    'kiddush_cup': 'assets/images/avatars/kiddush_cup.png',
+    'hamantaschen': 'assets/images/avatars/hamantaschen.png',
+    // Jewish items
+    'chanukia': 'assets/images/avatars/chanukia.png',
+    'sefer_torah': 'assets/images/avatars/sefer_torah.png',
+    'beit_hamikdash': 'assets/images/avatars/beit_hamikdash.png',
   };
 
   /// Check if an avatar ID is an image-based avatar
