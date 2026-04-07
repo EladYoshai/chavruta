@@ -1200,11 +1200,10 @@ class _OmerTodayScreen extends StatelessWidget {
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              padding: const EdgeInsets.all(32),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFFDF5),
                 borderRadius: BorderRadius.circular(20),
@@ -1218,7 +1217,6 @@ class _OmerTodayScreen extends StatelessWidget {
                 ],
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('🌾', style: TextStyle(fontSize: 50)),
                   const SizedBox(height: 16),
@@ -1298,7 +1296,6 @@ class _OmerTodayScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -1306,6 +1303,7 @@ class _OmerTodayScreen extends StatelessWidget {
 class _SiddurTextScreen extends StatefulWidget {
   final String title;
   final String ref;
+
   const _SiddurTextScreen({required this.title, required this.ref});
 
   @override
