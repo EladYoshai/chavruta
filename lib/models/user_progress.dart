@@ -202,7 +202,7 @@ class UserProgress {
 
   String get avatarEmoji {
     if (activeAvatar.isNotEmpty) return activeAvatar;
-    return isFemale ? '👩' : '🧔';
+    return isFemale ? 'default_female' : 'default_male';
   }
 
   /// Whether to show mikvah feature (married woman)

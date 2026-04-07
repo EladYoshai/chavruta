@@ -5,10 +5,13 @@ import '../utils/constants.dart';
 
 /// Maps avatar IDs to image asset paths
 class AvatarAssets {
-  static const String defaultMale = 'assets/images/avatars/kohen_gadol.png';
-  static const String defaultFemale = 'assets/images/avatars/rebbetzin.png';
+  static const String defaultMale = 'assets/images/avatars/default_male.png';
+  static const String defaultFemale = 'assets/images/avatars/default_female.png';
 
   static const Map<String, String> imageAvatars = {
+    // Defaults
+    'default_male': 'assets/images/avatars/default_male.png',
+    'default_female': 'assets/images/avatars/default_female.png',
     // People
     'kohen_gadol': 'assets/images/avatars/kohen_gadol.png',
     'rebbetzin': 'assets/images/avatars/rebbetzin.png',

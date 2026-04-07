@@ -199,10 +199,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text(
-                          _selectedGender == 'נקבה' ? '👩' : '🧔',
-                          style: const TextStyle(fontSize: 50),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: Image.asset(
+                          _selectedGender == 'נקבה'
+                              ? 'assets/images/avatars/default_female.png'
+                              : 'assets/images/avatars/default_male.png',
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
@@ -236,11 +241,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildGenderButton('זכר', '🧔', _selectedGender == 'זכר'),
+                    child: _buildGenderButton('זכר', 'assets/images/avatars/default_male.png', _selectedGender == 'זכר'),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildGenderButton('נקבה', '👩', _selectedGender == 'נקבה'),
+                    child: _buildGenderButton('נקבה', 'assets/images/avatars/default_female.png', _selectedGender == 'נקבה'),
                   ),
                 ],
               ),
@@ -892,7 +897,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildGenderButton(String label, String emoji, bool isSelected) {
+  Widget _buildGenderButton(String label, String imagePath, bool isSelected) {
     return GestureDetector(
       onTap: () => setState(() => _selectedGender = label),
       child: AnimatedContainer(
@@ -917,7 +922,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         child: Column(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 36)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.cover),
+            ),
             const SizedBox(height: 6),
             Text(
               label,
