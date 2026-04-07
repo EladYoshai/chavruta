@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:geolocator/geolocator.dart';
+import 'firebase_service.dart';
 
 /// Complete Jewish calendar service for the smart siddur.
 /// Determines the exact halachic day type and all prayer modifications needed.
@@ -64,6 +65,9 @@ class JewishCalendarService {
     final lat = position?.latitude ?? 31.7683;
     final lon = position?.longitude ?? 35.2137;
     final isInIsrael = _isInIsrael(lat, lon);
+
+    // Save location for notification timing
+    FirebaseService.updateLocation(lat, lon);
 
     // Calculate sunset for halachic day change
     final geoLocation = GeoLocation.setLocation('User', lat, lon, now);

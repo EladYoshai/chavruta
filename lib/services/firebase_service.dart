@@ -9,6 +9,14 @@ import '../models/user_progress.dart';
 class FirebaseService {
   static bool _initialized = false;
   static String? _userId;
+  static double? _lastLat;
+  static double? _lastLon;
+
+  /// Update user's location for notification timing
+  static void updateLocation(double lat, double lon) {
+    _lastLat = lat;
+    _lastLon = lon;
+  }
 
   static const _firebaseOptions = FirebaseOptions(
     apiKey: 'AIzaSyCBn-LugNq3tlzHi-W-maIfMylK-lKDBuk',
@@ -70,6 +78,10 @@ class FirebaseService {
         'encouragementLevel': progress.encouragementLevel,
         'lastMeatTime': progress.lastMeatTime,
         'meatDairyHours': progress.meatDairyHours,
+        'timezone': DateTime.now().timeZoneName,
+        'timezoneOffset': DateTime.now().timeZoneOffset.inMinutes,
+        'latitude': _lastLat,
+        'longitude': _lastLon,
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Firestore sync failed: $e');
