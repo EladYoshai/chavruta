@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app/app_state.dart';
 import '../data/siddur_structure.dart';
 import '../services/jewish_calendar_service.dart';
+import '../services/prayer_decision_engine.dart';
 import '../services/sefaria_service.dart';
 import '../utils/constants.dart';
 import '../widgets/torah_text_viewer.dart';
@@ -458,36 +459,48 @@ class _SiddurScreenState extends State<SiddurScreen> {
           ),
           if (mods.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'שינויים בתפילה היום:',
-                    style: GoogleFonts.rubik(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkBrown,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  ...mods.map((mod) => Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Text(
-                      mod,
-                      style: GoogleFonts.rubik(fontSize: 13, color: AppColors.darkBrown, height: 1.4),
-                    ),
-                  )),
-                ],
-              ),
-            ),
+            // Show per-tefila breakdown
+            for (final tefila in [TefilaType.shacharit, TefilaType.mincha, TefilaType.arvit])
+              _buildTefilaFlowCard(dayInfo, tefila, nusach),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTefilaFlowCard(SiddurDayInfo dayInfo, TefilaType tefila, String nusach) {
+    final minhag = MinhagProfile.fromOverrides(
+      context.read<AppState>().progress.minhagOverrides);
+    final flow = PrayerDecisionEngine.getFlow(dayInfo, tefila, nusach, minhag);
+    final summary = flow.getSummary();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tefila.hebrewName,
+            style: GoogleFonts.rubik(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1B5E20),
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...summary.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text(
+              item,
+              style: GoogleFonts.rubik(fontSize: 12, color: AppColors.darkBrown, height: 1.3),
+            ),
+          )),
         ],
       ),
     );
@@ -862,8 +875,8 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                                         child: Text(
                                           clean,
                                           style: const TextStyle(
-                                            fontFamily: 'serif',
-                                            fontSize: 26,
+                                            fontFamily: 'Frank Ruhl Libre',
+                                            fontSize: 22,
                                             height: 2.0,
                                             color: Color(0xFF2C1810),
                                           ),
@@ -993,14 +1006,25 @@ class _OmerTodayScreen extends StatelessWidget {
                       color: const Color(0xFF1B5E20),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  const SizedBox(height: 20),
+                  // לשם יחוד
+                  Text(
+                    'לְשֵׁם יִחוּד קוּדְשָׁא בְּרִיךְ הוּא וּשְׁכִינְתֵּהּ, בִּדְחִילוּ וּרְחִימוּ, לְיַחֵד שֵׁם יוֹ"ד הֵ"א בְּוָא"ו הֵ"א בְּיִחוּדָא שְׁלִים, בְּשֵׁם כָּל יִשְׂרָאֵל.\nהִנְנִי מוּכָן וּמְזוּמָּן לְקַיֵּם מִצְוַת עֲשֵׂה שֶׁל סְפִירַת הָעוֹמֶר.',
+                    style: GoogleFonts.frankRuhlLibre(
+                      fontSize: 18,
+                      height: 1.8,
+                      color: Colors.grey.shade700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  // ברכה
+                  Text(
                     'בָּרוּךְ אַתָּה ה\' אֱלֹקֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו, וְצִוָּנוּ עַל סְפִירַת הָעוֹמֶר.',
-                    style: TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 26,
+                    style: GoogleFonts.frankRuhlLibre(
+                      fontSize: 22,
                       height: 2.0,
-                      color: Color(0xFF2C1810),
+                      color: const Color(0xFF2C1810),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1015,22 +1039,31 @@ class _OmerTodayScreen extends StatelessWidget {
                     ),
                     child: Text(
                       'הַיּוֹם $dayText לָעוֹמֶר.',
-                      style: const TextStyle(
-                        fontFamily: 'serif',
-                        fontSize: 28,
+                      style: GoogleFonts.frankRuhlLibre(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         height: 1.8,
-                        color: Color(0xFF1B5E20),
+                        color: const Color(0xFF1B5E20),
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  // יהי רצון after counting
+                  Text(
+                    'יְהִי רָצוֹן מִלְּפָנֶיךָ ה\' אֱלֹקֵינוּ וֵאלֹקֵי אֲבוֹתֵינוּ, שֶׁבִּזְכוּת סְפִירַת הָעוֹמֶר שֶׁסָּפַרְתִּי הַיּוֹם, יְתֻקַּן מַה שֶׁפָּגַמְתִּי בִּסְפִירָה, וְאֶטָּהֵר וְאֶתְקַדֵּשׁ בִּקְדֻשָּׁה שֶׁל מַעְלָה, וְעַל יְדֵי זֶה יֻשְׁפַּע שֶׁפַע רַב בְּכָל הָעוֹלָמוֹת, וּלְתַקֵּן אֶת נַפְשׁוֹתֵינוּ וְרוּחוֹתֵינוּ וְנִשְׁמוֹתֵינוּ מִכָּל סִיג וּפְגָם, וּלְטַהֲרֵנוּ וּלְקַדְּשֵׁנוּ בִּקְדֻשָּׁתְךָ הָעֶלְיוֹנָה, אָמֵן סֶלָה.',
+                    style: GoogleFonts.frankRuhlLibre(
+                      fontSize: 18,
+                      height: 1.8,
+                      color: Colors.grey.shade700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'הָרַחֲמָן הוּא יַחֲזִיר לָנוּ עֲבוֹדַת בֵּית הַמִּקְדָּשׁ לִמְקוֹמָהּ, בִּמְהֵרָה בְיָמֵינוּ אָמֵן סֶלָה.',
-                    style: const TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 22,
+                    style: GoogleFonts.frankRuhlLibre(
+                      fontSize: 20,
                       height: 2.0,
                       color: Color(0xFF2C1810),
                     ),
@@ -1192,7 +1225,7 @@ class _SiddurTextScreenState extends State<_SiddurTextScreen> {
                           child: Text(
                             clean,
                             style: const TextStyle(
-                              fontFamily: 'serif',
+                              fontFamily: 'Frank Ruhl Libre',
                               fontSize: 26,
                               height: 2.0,
                               color: Color(0xFF2C1810),
@@ -1422,7 +1455,7 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                                   const SizedBox(height: 16),
                                   const Text(
                                     'אָנָּא ה\' אֱלֹקֵי הָרוּחוֹת לְכָל בָּשָׂר, יְהִי רָצוֹן מִלְּפָנֶיךָ שֶׁתְּהֵא נִשְׁמַת הַנִּפְטָר/ת צְרוּרָה בִּצְרוֹר הַחַיִּים. ה\' הוּא נַחֲלָתוֹ, וְיָנוּחַ בְּשָׁלוֹם עַל מִשְׁכָּבוֹ/ה. וְנֹאמַר אָמֵן.',
-                                    style: TextStyle(fontFamily: 'serif', fontSize: 24, height: 2.0, color: Color(0xFF2C1810)),
+                                    style: TextStyle(fontFamily: 'Frank Ruhl Libre', fontSize: 24, height: 2.0, color: Color(0xFF2C1810)),
                                   ),
                                   const SizedBox(height: 20),
                                   Text('הכנס את שם הנפטר/ת למעלה לקבלת פרקי תהילים לפי אותיות השם',
@@ -1469,7 +1502,7 @@ class _AzkaraScreenState extends State<_AzkaraScreen> {
                                     child: Text(
                                       clean,
                                       style: const TextStyle(
-                                        fontFamily: 'serif',
+                                        fontFamily: 'Frank Ruhl Libre',
                                         fontSize: 26,
                                         height: 2.0,
                                         color: Color(0xFF2C1810),
@@ -1554,7 +1587,7 @@ class _ChanukatHabayitScreen extends StatelessWidget {
                     child: Text(
                       line,
                       style: const TextStyle(
-                        fontFamily: 'serif',
+                        fontFamily: 'Frank Ruhl Libre',
                         fontSize: 26,
                         height: 2.0,
                         color: Color(0xFF2C1810),
@@ -1807,7 +1840,7 @@ class _MishnayotAzkaraScreenState extends State<_MishnayotAzkaraScreen> {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: Text(clean,
                                         style: const TextStyle(
-                                          fontFamily: 'serif', fontSize: 24,
+                                          fontFamily: 'Frank Ruhl Libre', fontSize: 24,
                                           height: 2.0, color: Color(0xFF2C1810))),
                                   );
                                 }).toList(),
