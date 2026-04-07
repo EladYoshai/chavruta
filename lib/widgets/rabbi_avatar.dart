@@ -21,6 +21,9 @@ class AvatarAssets {
     'navi': 'assets/images/avatars/navi.png',
     'amora': 'assets/images/avatars/amora.png',
     'lamdan': 'assets/images/avatars/lamdan.png',
+    'neviah': 'assets/images/avatars/neviah.png',
+    'eshet_chayil': 'assets/images/avatars/eshet_chayil.png',
+    'shakdanit': 'assets/images/avatars/shakdanit.png',
     // Foods
     'jachnun': 'assets/images/avatars/jachnun.png',
     'gefilte_fish': 'assets/images/avatars/gefilte_fish.png',

@@ -46,15 +46,14 @@ class StorageService {
         }
       }
 
-      // Reset daily completions
-      progress.todayCompleted = {
-        'tehillim': false,
-        'shnayim_mikra': false,
-        'halacha': false,
-        'mishna': false,
-        'emunah': false,
-        'gemara': false,
-      };
+      // Reset daily completions (preserve all keys, just set to false)
+      progress.todayCompleted.updateAll((key, value) => false);
+      // Ensure all section keys exist
+      for (final key in ['tehillim', 'shnayim_mikra', 'halacha', 'mishna',
+          'emunah', 'gemara', 'rambam', 'shmirat_halashon', 'pirkei_avot',
+          'nach_yomi', 'peninei_halacha']) {
+        progress.todayCompleted.putIfAbsent(key, () => false);
+      }
 
       // Reset daily tracker
       if (progress.lastTrackerDate != today) {

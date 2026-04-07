@@ -36,6 +36,9 @@ const List<ShopItem> shopItems = [
   ShopItem(id: 'navi', emoji: '', name: 'נביא', description: 'נביא עם הילה זהובה', price: 150, category: 'avatar', imagePath: 'assets/images/avatars/navi.png'),
   ShopItem(id: 'amora', emoji: '', name: 'אמורא', description: 'אמורא בין הספרים העתיקים', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/amora.png'),
   ShopItem(id: 'lamdan', emoji: '', name: 'למדן', description: 'למדן בספריה חמה', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/lamdan.png'),
+  ShopItem(id: 'neviah', emoji: '', name: 'נביאה', description: 'נביאה עם מגילות ואור', price: 120, category: 'avatar', imagePath: 'assets/images/avatars/neviah.png'),
+  ShopItem(id: 'eshet_chayil', emoji: '', name: 'אשת חייל', description: 'אשת חייל - צניעות ומסורת', price: 100, category: 'avatar', imagePath: 'assets/images/avatars/eshet_chayil.png'),
+  ShopItem(id: 'shakdanit', emoji: '', name: 'שקדנית', description: 'שקדנית בספריה', price: 80, category: 'avatar', imagePath: 'assets/images/avatars/shakdanit.png'),
 
   // === Avatars - Foods (3D images) ===
   ShopItem(id: 'jachnun', emoji: '', name: "ג'חנון", description: "ג'חנון חם בשבת בבוקר!", price: 90, category: 'avatar', imagePath: 'assets/images/avatars/jachnun.png'),

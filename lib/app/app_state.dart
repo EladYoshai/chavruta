@@ -145,6 +145,7 @@ class AppState extends ChangeNotifier {
     }
 
     await _storage.saveProgress(_progress);
+    _syncToCloud();
     notifyListeners();
   }
 
