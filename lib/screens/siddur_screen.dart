@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
 import '../app/app_state.dart';
 import '../data/siddur_structure.dart';
@@ -588,7 +589,8 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tabScrollController = ScrollController();
 
-  // Each prayer's loaded text
+  // Modified prayer list (after decision tree filtering)
+  List<PrayerItem> _filteredItems = [];
   List<List<String>> _prayerTexts = [];
   List<GlobalKey> _sectionKeys = [];
   int _activeIndex = 0;
@@ -598,9 +600,207 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
   @override
   void initState() {
     super.initState();
-    _sectionKeys = List.generate(widget.category.items.length, (_) => GlobalKey());
+    _applyDecisionTree();
+    _sectionKeys = List.generate(_filteredItems.length, (_) => GlobalKey());
     _scrollController.addListener(_onScroll);
     _loadAll();
+  }
+
+  /// Apply decision tree: filter, add, and reorder prayers for today
+  void _applyDecisionTree() {
+    final nusach = context.read<AppState>().progress.nusach;
+
+    // Get day info synchronously using cached data or defaults
+    final now = DateTime.now();
+    final jewishCal = JewishCalendar.fromDateTime(now);
+    final month = jewishCal.getJewishMonth();
+    final day = jewishCal.getJewishDayOfMonth();
+
+    // Determine tefila type from category name
+    final tefilaType = _getTefilaType(widget.category.name);
+
+    // Start with original items
+    final items = List<PrayerItem>.from(widget.category.items);
+
+    // === Filter: Remove tachanun on days without ===
+    final sayTachanun = _shouldSayTachanun(month, day, now.weekday, tefilaType, jewishCal.isJewishLeapYear());
+    if (!sayTachanun) {
+      items.removeWhere((p) => _isTachanunPrayer(p.name));
+    }
+
+    // === Filter: Remove lamenatzeach when no tachanun ===
+    if (!sayTachanun) {
+      items.removeWhere((p) => p.name.contains('למנצח'));
+    }
+
+    // === Add: Hallel (after Amidah in shacharit) ===
+    if (tefilaType == TefilaType.shacharit) {
+      final hallelType = _getHallelForToday(month, day);
+      if (hallelType != HallelType.none) {
+        // Find amidah index and insert hallel after it
+        final amidahIdx = items.indexWhere((p) =>
+            p.name.contains('עמידה') || p.name.contains('שמונה עשרה') || p.name.contains('אמידה'));
+        final hallelName = hallelType == HallelType.full ? 'הלל שלם' : 'חצי הלל';
+        final hallelItem = PrayerItem(name: hallelName, ref: _getHallelRef(nusach));
+        if (amidahIdx >= 0) {
+          items.insert(amidahIdx + 1, hallelItem);
+        } else {
+          items.add(hallelItem);
+        }
+      }
+    }
+
+    // === Add: Musaf (for Shabbat, R"C, Chol HaMoed, Yom Tov) ===
+    if (tefilaType == TefilaType.shacharit && _needsMusaf(month, day, now.weekday)) {
+      final musafItem = PrayerItem(name: 'מוסף', ref: _getMusafRef(nusach, month, day, now.weekday));
+      items.add(musafItem);
+    }
+
+    _filteredItems = items;
+  }
+
+  TefilaType _getTefilaType(String categoryName) {
+    if (categoryName.contains('שחרית')) return TefilaType.shacharit;
+    if (categoryName.contains('מנחה')) return TefilaType.mincha;
+    if (categoryName.contains('ערבית') || categoryName.contains('קבלת')) return TefilaType.arvit;
+    if (categoryName.contains('מוסף')) return TefilaType.musaf;
+    return TefilaType.shacharit;
+  }
+
+  bool _isTachanunPrayer(String name) {
+    final lower = name.toLowerCase();
+    return name.contains('תחנון') || name.contains('נפילת אפים') ||
+        name.contains('וידוי') || lower.contains('tachanun');
+  }
+
+  bool _shouldSayTachanun(int month, int day, int dayOfWeek, TefilaType tefila, bool isLeapYear) {
+    if (tefila == TefilaType.arvit) return false;
+    if (dayOfWeek == 6) return false; // Shabbat
+    if (month == 7) return false; // All Tishrei
+    if (month == 1) return false; // All Nisan
+    if (month == 2 && day == 18) return false; // Lag BaOmer
+    if (month == 3 && day >= 1 && day <= 8) return false; // Sivan
+    if (month == 5 && day == 15) return false; // Tu B'Av
+    if (month == 6 && day == 29) return false; // Erev RH
+    if (month == 9 && day >= 25) return false; // Chanukah
+    if (month == 10 && day <= 3) return false;
+    if (month == 11 && day == 15) return false; // Tu BiShvat
+    if (month == 12 && (day == 14 || day == 15)) return false; // Purim
+    if (isLeapYear && month == 13 && (day == 14 || day == 15)) return false;
+    if (month == 2 && day == 14) return false; // Pesach Sheni
+    if (day == 1 || day == 30) return false; // Rosh Chodesh
+    return true;
+  }
+
+  HallelType _getHallelForToday(int month, int day) {
+    if (month == 7 && day >= 15 && day <= 22) return HallelType.full;
+    if (month == 9 && day >= 25) return HallelType.full;
+    if (month == 10 && day <= 3) return HallelType.full;
+    if (month == 3 && day == 6) return HallelType.full;
+    if (month == 1 && day == 15) return HallelType.full;
+    if (month == 1 && day >= 16 && day <= 21) return HallelType.half;
+    if (day == 1 || day == 30) return HallelType.half;
+    return HallelType.none;
+  }
+
+  String _getHallelRef(String nusach) {
+    // Hallel is in Shacharit section - use Sefaria refs
+    return switch (nusach) {
+      'ashkenaz' => 'Siddur_Ashkenaz,_Weekday,_Shacharit,_Hallel',
+      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Weekday_Shacharit,_Hallel',
+      _ => 'Siddur_Sefard,_Weekday_Shacharit,_Hallel',
+    };
+  }
+
+  bool _needsMusaf(int month, int day, int dayOfWeek) {
+    if (dayOfWeek == 6) return true; // Shabbat
+    if (day == 1 || day == 30) return true; // Rosh Chodesh
+    if (month == 7 && day >= 15 && day <= 22) return true; // Sukkot
+    if (month == 1 && day >= 15 && day <= 21) return true; // Pesach
+    if (month == 3 && day == 6) return true; // Shavuot
+    return false;
+  }
+
+  String _getMusafRef(String nusach, int month, int day, int dayOfWeek) {
+    // Try to load musaf from Sefaria
+    if (dayOfWeek == 6) {
+      return switch (nusach) {
+        'ashkenaz' => 'Siddur_Ashkenaz,_Shabbat,_Musaf_LeShabbat',
+        'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Shabbat_Mussaf',
+        _ => 'Siddur_Sefard,_Musaf',
+      };
+    }
+    // Default musaf
+    return switch (nusach) {
+      'edot_hamizrach' => 'Siddur_Edot_HaMizrach,_Shabbat_Mussaf',
+      _ => 'Siddur_Sefard,_Musaf',
+    };
+  }
+
+  bool _isMashivSeason(int month, int day) {
+    if (month == 7 && day >= 22) return true;
+    if (month >= 8 && month <= 13) return true;
+    if (month == 1 && day < 15) return true;
+    return false;
+  }
+
+  /// Apply seasonal text modifications to prayer segments
+  List<String> _applyTextModifications(List<String> segments, String prayerName,
+      bool isMashiv, bool isYaaleh, String yaalehOccasion, String nusach) {
+    final result = <String>[];
+
+    for (final segment in segments) {
+      var modified = segment;
+
+      // === Swap mashiv haruach / morid hatal ===
+      if (!isMashiv) {
+        // Summer: remove mashiv haruach, add morid hatal (for sefard/edot hamizrach)
+        if (modified.contains('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם') ||
+            modified.contains('משיב הרוח ומוריד הגשם')) {
+          if (nusach == 'ashkenaz') {
+            modified = modified
+                .replaceAll('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם', '')
+                .replaceAll('משיב הרוח ומוריד הגשם', '');
+          } else {
+            modified = modified
+                .replaceAll('מַשִּׁיב הָרוּחַ וּמוֹרִיד הַגֶּשֶׁם', 'מוֹרִיד הַטָּל')
+                .replaceAll('משיב הרוח ומוריד הגשם', 'מוריד הטל');
+          }
+        }
+      }
+
+      result.add(modified);
+    }
+
+    // === Insert יעלה ויבוא after רצה (if needed) ===
+    if (isYaaleh && yaalehOccasion.isNotEmpty) {
+      final yaalehText =
+          'אֱלֹהֵינוּ וֵאלֹהֵי אֲבוֹתֵינוּ, יַעֲלֶה וְיָבֹא וְיַגִּיעַ, וְיֵרָאֶה וְיֵרָצֶה וְיִשָּׁמַע, '
+          'וְיִפָּקֵד וְיִזָּכֵר זִכְרוֹנֵנוּ וּפִקְדוֹנֵנוּ, וְזִכְרוֹן אֲבוֹתֵינוּ, '
+          'וְזִכְרוֹן מָשִׁיחַ בֶּן דָּוִד עַבְדֶּךָ, וְזִכְרוֹן יְרוּשָׁלַיִם עִיר קָדְשֶׁךָ, '
+          'וְזִכְרוֹן כָּל עַמְּךָ בֵּית יִשְׂרָאֵל לְפָנֶיךָ, לִפְלֵטָה לְטוֹבָה, '
+          'לְחֵן וּלְחֶסֶד וּלְרַחֲמִים, לְחַיִּים וּלְשָׁלוֹם, $yaalehOccasion. '
+          'זָכְרֵנוּ ה\' אֱלֹהֵינוּ בּוֹ לְטוֹבָה, וּפָקְדֵנוּ בוֹ לִבְרָכָה, '
+          'וְהוֹשִׁיעֵנוּ בוֹ לְחַיִּים טוֹבִים. וּבִדְבַר יְשׁוּעָה וְרַחֲמִים חוּס וְחָנֵּנוּ '
+          'וְרַחֵם עָלֵינוּ וְהוֹשִׁיעֵנוּ, כִּי אֵלֶיךָ עֵינֵינוּ, כִּי אֵל מֶלֶךְ חַנּוּן וְרַחוּם אָתָּה.';
+
+      // Find a segment containing רצה or עבודה and insert after it
+      bool inserted = false;
+      for (int i = 0; i < result.length; i++) {
+        if ((result[i].contains('רְצֵה') || result[i].contains('רצה') ||
+            result[i].contains('וְתֶחֱזֶינָה') || result[i].contains('ותחזינה')) && !inserted) {
+          result.insert(i + 1, '【יעלה ויבוא - $yaalehOccasion】\n$yaalehText');
+          inserted = true;
+          break;
+        }
+      }
+      // If not found in text, add as separate block at end
+      if (!inserted) {
+        result.add('【יעלה ויבוא - $yaalehOccasion】\n$yaalehText');
+      }
+    }
+
+    return result;
   }
 
   @override
@@ -611,8 +811,27 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
   }
 
   Future<void> _loadAll() async {
+    final nusach = context.read<AppState>().progress.nusach;
+    final now = DateTime.now();
+    final jewishCal = JewishCalendar.fromDateTime(now);
+    final month = jewishCal.getJewishMonth();
+    final day = jewishCal.getJewishDayOfMonth();
+
+    // Determine seasonal text swaps
+    final isMashivHaruach = _isMashivSeason(month, day);
+    final isYaalehVyavo = (day == 1 || day == 30) || // Rosh Chodesh
+        (month == 1 && day >= 16 && day <= 21) || // Chol HaMoed Pesach
+        (month == 7 && day >= 16 && day <= 21); // Chol HaMoed Sukkot
+
+    // Ya'aleh v'Yavo occasion
+    String yaalehOccasion = '';
+    if (day == 1 || day == 30) yaalehOccasion = 'בְּיוֹם רֹאשׁ הַחֹדֶשׁ הַזֶּה';
+    if (month == 1 && day >= 15 && day <= 22) yaalehOccasion = 'בְּיוֹם חַג הַמַּצּוֹת הַזֶּה';
+    if (month == 7 && day >= 15 && day <= 22) yaalehOccasion = 'בְּיוֹם חַג הַסֻּכּוֹת הַזֶּה';
+    if (month == 3 && (day == 6 || day == 7)) yaalehOccasion = 'בְּיוֹם חַג הַשָּׁבֻעוֹת הַזֶּה';
+
     final texts = <List<String>>[];
-    for (final prayer in widget.category.items) {
+    for (final prayer in _filteredItems) {
       try {
         final data = await _sefaria.getText(prayer.ref);
         List<String> segments = [];
@@ -634,6 +853,11 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
             }
           }
         }
+
+        // === Text modifications based on decision tree ===
+        segments = _applyTextModifications(segments, prayer.name,
+            isMashivHaruach, isYaalehVyavo, yaalehOccasion, nusach);
+
         texts.add(segments);
       } catch (_) {
         texts.add([]);
@@ -775,7 +999,7 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                       controller: _tabScrollController,
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: widget.category.items.length,
+                      itemCount: _filteredItems.length,
                       itemBuilder: (context, index) {
                         final isActive = index == _activeIndex;
                         return Padding(
@@ -795,7 +1019,7 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                                 ),
                               ),
                               child: Text(
-                                widget.category.items[index].name,
+                                _filteredItems[index].name,
                                 style: GoogleFonts.rubik(
                                   fontSize: 13,
                                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
@@ -814,8 +1038,8 @@ class _PrayerListScreenState extends State<_PrayerListScreen> {
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        children: List.generate(widget.category.items.length, (index) {
-                        final prayer = widget.category.items[index];
+                        children: List.generate(_filteredItems.length, (index) {
+                        final prayer = _filteredItems[index];
                         final texts = index < _prayerTexts.length
                             ? _prayerTexts[index]
                             : <String>[];
