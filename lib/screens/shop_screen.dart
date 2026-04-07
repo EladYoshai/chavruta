@@ -402,9 +402,9 @@ class ShopScreen extends StatelessWidget {
                   style: GoogleFonts.rubik(color: Colors.grey)),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(ctx);
-                appState.purchaseItem(item.id, item.price, item.category,
+                await appState.purchaseItem(item.id, item.price, item.category,
                     item.category == 'title' ? item.name : null);
               },
               style: ElevatedButton.styleFrom(

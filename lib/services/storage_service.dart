@@ -22,7 +22,10 @@ class StorageService {
 
   Future<void> saveProgress(UserProgress progress) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_progressKey, json.encode(progress.toJson()));
+    final jsonStr = json.encode(progress.toJson());
+    await prefs.setString(_progressKey, jsonStr);
+    // Force flush to ensure persistence (critical for web)
+    await prefs.reload();
   }
 
   Future<void> _checkDailyReset(UserProgress progress) async {
