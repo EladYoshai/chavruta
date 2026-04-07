@@ -42,19 +42,46 @@ messaging.onBackgroundMessage(function(payload) {
   return self.registration.showNotification(title, options);
 });
 
-// Handle notification click - open the app
+// Handle notification click and actions
 self.addEventListener('notificationclick', function(event) {
+  const action = event.action;
   event.notification.close();
-  // Open the app when notification is clicked
+
+  if (action === 'omer_done') {
+    // User read the omer - dismiss, no further action
+    return;
+  }
+
+  if (action === 'omer_snooze') {
+    // Snooze: show again in 30 minutes
+    event.waitUntil(
+      new Promise(resolve => {
+        setTimeout(() => {
+          self.registration.showNotification('חברותא - ספירת העומר 🌾', {
+            body: 'תזכורת: לא לשכוח לספור ספירת העומר!',
+            icon: '/icons/Icon-192.png',
+            dir: 'rtl',
+            lang: 'he',
+            tag: 'chavruta-omer-snooze',
+            actions: [
+              { action: 'omer_done', title: 'קראתי ✓' },
+            ],
+          });
+          resolve();
+        }, 30 * 60 * 1000); // 30 minutes
+      })
+    );
+    return;
+  }
+
+  // Default: open the app
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      // If app is already open, focus it
       for (const client of clientList) {
         if (client.url.includes('chavruta') && 'focus' in client) {
           return client.focus();
         }
       }
-      // Otherwise open new window
       if (clients.openWindow) {
         return clients.openWindow('/');
       }

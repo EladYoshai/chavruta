@@ -34,6 +34,12 @@ class UserProgress {
   String notificationTime; // 'HH:mm' format
   List<int> reminderDays; // 0=Sun, 1=Mon, ..., 6=Sat (which days to remind)
 
+  // Web push notification preferences
+  bool omerReminderPush;           // תזכורת ספירת העומר
+  bool streakReminderPush;         // תזכורת רצף לימוד
+  bool meatDairyReminderPush;      // תזכורת סוף זמן בשר-חלב
+  String encouragementLevel;       // 'none', 'low', 'medium', 'high'
+
   // Marital status (for women - mikvah feature)
   String maritalStatus; // '', 'single', 'married'
 
@@ -87,6 +93,10 @@ class UserProgress {
     this.notificationsEnabled = true,
     this.notificationTime = '08:00',
     List<int>? reminderDays,
+    this.omerReminderPush = true,
+    this.streakReminderPush = true,
+    this.meatDairyReminderPush = true,
+    this.encouragementLevel = 'medium',
     this.maritalStatus = '',
     this.iluiNeshama = '',
     this.omerReminderEnabled = false,
@@ -236,6 +246,10 @@ class UserProgress {
         'notificationsEnabled': notificationsEnabled,
         'notificationTime': notificationTime,
         'reminderDays': reminderDays,
+        'omerReminderPush': omerReminderPush,
+        'streakReminderPush': streakReminderPush,
+        'meatDairyReminderPush': meatDairyReminderPush,
+        'encouragementLevel': encouragementLevel,
         'maritalStatus': maritalStatus,
         'iluiNeshama': iluiNeshama,
         'omerReminderEnabled': omerReminderEnabled,
@@ -286,6 +300,10 @@ class UserProgress {
         reminderDays: json['reminderDays'] != null
             ? List<int>.from(json['reminderDays'])
             : null,
+        omerReminderPush: json['omerReminderPush'] ?? true,
+        streakReminderPush: json['streakReminderPush'] ?? true,
+        meatDairyReminderPush: json['meatDairyReminderPush'] ?? true,
+        encouragementLevel: json['encouragementLevel'] ?? 'medium',
         maritalStatus: json['maritalStatus'] ?? '',
         iluiNeshama: json['iluiNeshama'] ?? '',
         omerReminderEnabled: json['omerReminderEnabled'] ?? false,

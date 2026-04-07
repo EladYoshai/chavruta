@@ -63,6 +63,13 @@ class FirebaseService {
         'todayCompleted': progress.todayCompleted,
         'lastActive': FieldValue.serverTimestamp(),
         'platform': kIsWeb ? 'web' : 'android',
+        // Push notification preferences
+        'omerReminderPush': progress.omerReminderPush,
+        'streakReminderPush': progress.streakReminderPush,
+        'meatDairyReminderPush': progress.meatDairyReminderPush,
+        'encouragementLevel': progress.encouragementLevel,
+        'lastMeatTime': progress.lastMeatTime,
+        'meatDairyHours': progress.meatDairyHours,
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Firestore sync failed: $e');

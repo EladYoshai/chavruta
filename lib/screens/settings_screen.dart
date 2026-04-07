@@ -31,6 +31,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _maritalStatus = '';
   double _meatDairyHours = 6;
   bool _candleLightingEnabled = false;
+  // Push notification preferences
+  bool _omerReminderPush = true;
+  bool _streakReminderPush = true;
+  bool _meatDairyReminderPush = true;
+  String _encouragementLevel = 'medium';
 
   @override
   void initState() {
@@ -59,6 +64,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _maritalStatus = progress.maritalStatus;
     _meatDairyHours = progress.meatDairyHours.toDouble();
     _candleLightingEnabled = progress.candleLightingEnabled;
+    _omerReminderPush = progress.omerReminderPush;
+    _streakReminderPush = progress.streakReminderPush;
+    _meatDairyReminderPush = progress.meatDairyReminderPush;
+    _encouragementLevel = progress.encouragementLevel;
   }
 
   @override
@@ -89,6 +98,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       omerReminderTime: '${_omerReminderTime.hour.toString().padLeft(2, '0')}:${_omerReminderTime.minute.toString().padLeft(2, '0')}',
       meatDairyHours: _meatDairyHours,
       candleLightingEnabled: _candleLightingEnabled,
+      omerReminderPush: _omerReminderPush,
+      streakReminderPush: _streakReminderPush,
+      meatDairyReminderPush: _meatDairyReminderPush,
+      encouragementLevel: _encouragementLevel,
     );
 
     // Update notification schedule (mobile only)
@@ -659,6 +672,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
+              // Push notification settings
+              const SizedBox(height: 20),
+              _buildLabel('התראות (פוש)'),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    // Omer reminder
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text('🌾 תזכורת ספירת העומר',
+                            style: GoogleFonts.rubik(fontSize: 14, color: AppColors.darkBrown))),
+                        Switch(
+                          value: _omerReminderPush,
+                          activeTrackColor: AppColors.deepBlue,
+                          onChanged: (v) => setState(() => _omerReminderPush = v),
+                        ),
+                      ],
+                    ),
+                    // Streak reminder
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text('🔥 תזכורת לשמירת הרצף',
+                            style: GoogleFonts.rubik(fontSize: 14, color: AppColors.darkBrown))),
+                        Switch(
+                          value: _streakReminderPush,
+                          activeTrackColor: AppColors.deepBlue,
+                          onChanged: (v) => setState(() => _streakReminderPush = v),
+                        ),
+                      ],
+                    ),
+                    // Meat/dairy timer
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text('🥩 תזכורת סוף זמן בשר-חלב',
+                            style: GoogleFonts.rubik(fontSize: 14, color: AppColors.darkBrown))),
+                        Switch(
+                          value: _meatDairyReminderPush,
+                          activeTrackColor: AppColors.deepBlue,
+                          onChanged: (v) => setState(() => _meatDairyReminderPush = v),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Encouragement level
+                    Text('💪 עידוד והנעה',
+                        style: GoogleFonts.rubik(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        _buildEncouragementButton('none', 'ללא'),
+                        _buildEncouragementButton('low', 'מעט'),
+                        _buildEncouragementButton('medium', 'בינוני'),
+                        _buildEncouragementButton('high', 'הרבה'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 32),
 
               // Save button
@@ -979,6 +1062,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: isSelected ? Colors.white : AppColors.darkBrown,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEncouragementButton(String value, String label) {
+    final isSelected = _encouragementLevel == value;
+    return GestureDetector(
+      onTap: () => setState(() => _encouragementLevel = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.deepBlue : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.deepBlue : AppColors.gold.withValues(alpha: 0.3)),
+        ),
+        child: Text(label,
+            style: GoogleFonts.rubik(fontSize: 14, fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.darkBrown)),
       ),
     );
   }

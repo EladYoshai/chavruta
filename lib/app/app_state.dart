@@ -62,6 +62,10 @@ class AppState extends ChangeNotifier {
     String? omerReminderTime,
     double? meatDairyHours,
     bool? candleLightingEnabled,
+    bool? omerReminderPush,
+    bool? streakReminderPush,
+    bool? meatDairyReminderPush,
+    String? encouragementLevel,
   }) async {
     final isNewProfile = _progress.userName.isEmpty && name.isNotEmpty;
     _progress.userName = name;
@@ -96,6 +100,10 @@ class AppState extends ChangeNotifier {
     if (candleLightingEnabled != null) {
       _progress.candleLightingEnabled = candleLightingEnabled;
     }
+    if (omerReminderPush != null) _progress.omerReminderPush = omerReminderPush;
+    if (streakReminderPush != null) _progress.streakReminderPush = streakReminderPush;
+    if (meatDairyReminderPush != null) _progress.meatDairyReminderPush = meatDairyReminderPush;
+    if (encouragementLevel != null) _progress.encouragementLevel = encouragementLevel;
     await _storage.saveProgress(_progress);
     _syncToCloud();
     notifyListeners();
