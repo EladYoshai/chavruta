@@ -443,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'סידור תפילה',
+                                  'סידור תפילה (pilot)',
                                   style: GoogleFonts.rubik(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
