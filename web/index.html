@@ -89,7 +89,7 @@
   <!-- ============================================ -->
   <script type="module">
     // Import Firebase SDK v9+
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import { getMessaging, getToken, isSupported as fcmSupported, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
     import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -106,11 +106,10 @@
     // VAPID key for web push
     const VAPID_KEY = 'BMqBYnqNLgUGrRj8CMnBYQInR8aNphnr1_i4s0zrJgi8zdadB30ODHPA4PWjzZY4U4C5m4GUUE5Bsl9UpwIOdI0';
 
-    // Initialize Firebase (named instance used ONLY for FCM/Firestore plumbing here;
-    // user auth UID is supplied by Flutter via window.chavrutaSetUserId so that
-    // push_tokens/$uid and users/$uid share the same UID).
-    const app = initializeApp(firebaseConfig, 'fcm-app');
-    const db = getFirestore(app);
+    // Named app just for messaging (FCM) - safe to init early.
+    // Firestore writes must go through Flutter's authenticated default app,
+    // so push_tokens/$uid writes pass the security rules (request.auth.uid == uid).
+    const fcmApp = initializeApp(firebaseConfig, 'fcm-app');
 
     let messaging = null;
     let swRegistration = null;
@@ -119,6 +118,16 @@
     window.chavrutaSetUserId = function(uid) {
       _flutterUid = uid || null;
     };
+
+    // Return Flutter's authenticated default Firebase app, waiting up to 5s.
+    async function getFlutterApp() {
+      for (let i = 0; i < 50; i++) {
+        const def = getApps().find(a => a.name === '[DEFAULT]');
+        if (def) return def;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return null;
+    }
 
     // Register service worker for background notifications
     async function registerSW() {
@@ -132,7 +141,7 @@
       }
     }
 
-    // Save token to Firestore under the same UID Flutter uses.
+    // Save token to Firestore via Flutter's authenticated default app.
     async function saveTokenToFirestore(token) {
       try {
         const uid = _flutterUid;
@@ -140,6 +149,12 @@
           console.warn('[FCM] No Flutter UID yet; token not saved');
           return null;
         }
+        const flutterApp = await getFlutterApp();
+        if (!flutterApp) {
+          console.warn('[FCM] Flutter default app not ready; token not saved');
+          return null;
+        }
+        const db = getFirestore(flutterApp);
         await setDoc(doc(db, 'push_tokens', uid), {
           token: token,
           platform: 'web',
@@ -172,7 +187,7 @@
           swRegistration = await navigator.serviceWorker.ready;
         }
         if (!messaging) {
-          messaging = getMessaging(app);
+          messaging = getMessaging(fcmApp);
           onMessage(messaging, (payload) => {
             console.log('[FCM] Foreground message:', payload);
             if (Notification.permission === 'granted') {
