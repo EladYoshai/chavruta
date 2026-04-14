@@ -42,4 +42,13 @@ class WebInstallService {
     if (!kIsWeb) return;
     interop.setUserId(uid);
   }
+
+  /// Expose a Dart function to JS for saving push tokens via Flutter's
+  /// authenticated Firestore client (avoids auth mismatch with JS SDK).
+  static void registerTokenSaver(
+    Future<bool> Function(String token, String userAgent) fn,
+  ) {
+    if (!kIsWeb) return;
+    interop.registerTokenSaver(fn);
+  }
 }

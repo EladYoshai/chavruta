@@ -89,9 +89,8 @@
   <!-- ============================================ -->
   <script type="module">
     // Import Firebase SDK v9+
-    import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import { getMessaging, getToken, isSupported as fcmSupported, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
-    import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     // Firebase config
     const firebaseConfig = {
@@ -119,16 +118,6 @@
       _flutterUid = uid || null;
     };
 
-    // Return Flutter's authenticated default Firebase app, waiting up to 5s.
-    async function getFlutterApp() {
-      for (let i = 0; i < 50; i++) {
-        const def = getApps().find(a => a.name === '[DEFAULT]');
-        if (def) return def;
-        await new Promise(r => setTimeout(r, 100));
-      }
-      return null;
-    }
-
     // Register service worker for background notifications
     async function registerSW() {
       try {
@@ -141,28 +130,22 @@
       }
     }
 
-    // Save token to Firestore via Flutter's authenticated default app.
+    // Hand token to Flutter's Dart-side saver (which uses the authenticated
+    // Firebase app and cloud_firestore package).
     async function saveTokenToFirestore(token) {
       try {
-        const uid = _flutterUid;
-        if (!uid) {
-          console.warn('[FCM] No Flutter UID yet; token not saved');
+        // Wait up to 5s for Dart to install window.chavrutaSaveToken
+        for (let i = 0; i < 50; i++) {
+          if (typeof window.chavrutaSaveToken === 'function') break;
+          await new Promise(r => setTimeout(r, 100));
+        }
+        if (typeof window.chavrutaSaveToken !== 'function') {
+          console.warn('[FCM] Dart token saver not ready; token not saved');
           return null;
         }
-        const flutterApp = await getFlutterApp();
-        if (!flutterApp) {
-          console.warn('[FCM] Flutter default app not ready; token not saved');
-          return null;
-        }
-        const db = getFirestore(flutterApp);
-        await setDoc(doc(db, 'push_tokens', uid), {
-          token: token,
-          platform: 'web',
-          createdAt: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-        }, { merge: true });
-        console.log('[FCM] Token saved for user:', uid);
-        return uid;
+        const ok = await window.chavrutaSaveToken(token, navigator.userAgent);
+        console.log('[FCM] Dart saver returned:', ok);
+        return ok ? 'ok' : null;
       } catch (err) {
         console.error('[FCM] Error saving token:', err);
         return null;

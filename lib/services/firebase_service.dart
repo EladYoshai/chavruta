@@ -46,6 +46,10 @@ class FirebaseService {
       if (_userId != null) {
         WebInstallService.setUserId(_userId!);
       }
+      // Expose a Dart-backed token saver to JS so writes go through
+      // Flutter's authenticated Firebase app (JS module SDK has a separate
+      // app registry and no auth session).
+      WebInstallService.registerTokenSaver(savePushToken);
     } catch (e) {
       debugPrint('Firebase init failed: $e');
     }
@@ -53,6 +57,25 @@ class FirebaseService {
 
   /// Get current user ID
   static String? get userId => _userId;
+
+  /// Save a web push token under the current user, keyed by uid.
+  /// Called from JS via the chavrutaSaveToken interop bridge.
+  static Future<bool> savePushToken(String token, String userAgent) async {
+    if (!_initialized || _userId == null) return false;
+    try {
+      await FirebaseFirestore.instance.collection('push_tokens').doc(_userId).set({
+        'token': token,
+        'platform': 'web',
+        'createdAt': DateTime.now().toIso8601String(),
+        'userAgent': userAgent,
+      }, SetOptions(merge: true));
+      debugPrint('Push token saved for $_userId');
+      return true;
+    } catch (e) {
+      debugPrint('Failed to save push token: $e');
+      return false;
+    }
+  }
 
   /// Sync user progress to Firestore
   static Future<void> syncProgress(UserProgress progress) async {

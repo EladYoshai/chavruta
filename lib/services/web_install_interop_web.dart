@@ -82,3 +82,13 @@ void setUserId(String uid) {
     (fn as JSFunction).callAsFunction(null, uid.toJS);
   } catch (_) {}
 }
+
+void registerTokenSaver(Future<bool> Function(String token, String userAgent) fn) {
+  try {
+    JSPromise<JSBoolean> handler(JSString token, JSString userAgent) {
+      final future = fn(token.toDart, userAgent.toDart).then((b) => b.toJS);
+      return future.toJS;
+    }
+    _window.setProperty('chavrutaSaveToken'.toJS, handler.toJS);
+  } catch (_) {}
+}
