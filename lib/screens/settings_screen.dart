@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/app_state.dart';
 import '../services/notification_service.dart';
 import '../utils/constants.dart';
@@ -890,6 +891,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontSize: 13,
                       color: Colors.grey.shade600,
                       height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  Text(
+                    'ליצירת קשר',
+                    style: GoogleFonts.rubik(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'אלעד יושעי',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.rubik(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () => launchUrl(Uri.parse('mailto:eryoshai@gmail.com')),
+                    child: Text(
+                      'eryoshai@gmail.com',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.rubik(
+                        fontSize: 13,
+                        color: AppColors.deepBlue,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ],

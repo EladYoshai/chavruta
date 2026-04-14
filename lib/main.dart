@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'app/app_state.dart';
 import 'app/theme.dart';
 import 'screens/home_screen.dart';
+import 'services/analytics_service.dart';
 import 'services/daf_summary_service.dart';
 import 'services/firebase_service.dart';
 import 'services/notification_service.dart';
@@ -20,6 +21,10 @@ void main() async {
 
   // Init Firebase (cloud sync)
   await FirebaseService.init();
+
+  // Init Firebase Analytics (web + mobile)
+  AnalyticsService.init();
+  AnalyticsService.logEvent('app_open');
 
   // Init notifications (mobile only)
   if (!kIsWeb) {

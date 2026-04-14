@@ -1,16 +1,37 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
-import 'analytics_stub.dart' if (dart.library.js_interop) 'analytics_web.dart';
 
-/// Lightweight Google Analytics wrapper.
-/// Sends custom events via gtag() on web. No-op on mobile.
+/// Analytics wrapper backed by Firebase Analytics.
+/// Works on web, Android, and iOS (requires google-services.json on Android).
 class AnalyticsService {
-  static void logEvent(String name, [Map<String, Object>? params]) {
-    if (!kIsWeb) return;
-    sendGtagEvent(name, params);
+  static FirebaseAnalytics? _fa;
+
+  /// Call once after Firebase.initializeApp().
+  static void init() {
+    try {
+      _fa = FirebaseAnalytics.instance;
+    } catch (e) {
+      debugPrint('Analytics init failed: $e');
+    }
   }
 
-  static void screenView(String screenName) =>
-      logEvent('screen_view', {'screen_name': screenName});
+  static void logEvent(String name, [Map<String, Object>? params]) {
+    final fa = _fa;
+    if (fa == null) return;
+    try {
+      fa.logEvent(name: name, parameters: params);
+    } catch (e) {
+      debugPrint('Analytics logEvent failed: $e');
+    }
+  }
+
+  static void screenView(String screenName) {
+    final fa = _fa;
+    if (fa == null) return;
+    try {
+      fa.logScreenView(screenName: screenName);
+    } catch (_) {}
+  }
 
   static void sectionCompleted(String section) =>
       logEvent('section_completed', {'section': section});
