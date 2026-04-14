@@ -14,6 +14,7 @@ import '../widgets/rabbi_avatar.dart';
 import '../widgets/streak_counter.dart';
 import '../widgets/zuzim_counter.dart';
 import '../widgets/section_card.dart';
+import '../widgets/install_banner.dart';
 import 'study_screen.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
@@ -193,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
+                const SliverToBoxAdapter(child: InstallBanner()),
                 // App bar with stats
                 SliverToBoxAdapter(
                   child: Container(

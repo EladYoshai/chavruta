@@ -1,9 +1,9 @@
 {
     "name": "חברותא - לימוד תורה יומי",
     "short_name": "חברותא",
-    "start_url": ".",
-    "scope": "/",
-    "id": "/?source=pwa",
+    "start_url": "/chavruta/",
+    "scope": "/chavruta/",
+    "id": "/chavruta/?source=pwa",
     "display": "standalone",
     "background_color": "#FFFDF5",
     "theme_color": "#1A237E",

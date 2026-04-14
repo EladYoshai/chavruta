@@ -4,6 +4,8 @@ import '../models/user_progress.dart';
 import '../services/analytics_service.dart';
 import '../services/firebase_service.dart';
 import '../services/storage_service.dart';
+import '../services/web_install_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 
 class AppState extends ChangeNotifier {
@@ -35,6 +37,20 @@ class AppState extends ChangeNotifier {
     AnalyticsService.sectionCompleted(sectionKey);
     _syncToCloud();
     notifyListeners();
+    _maybePromptWebNotifications();
+  }
+
+  /// After a section is completed, ask the web user for notification permission.
+  /// Only runs once per device and only on web where default permission is pending.
+  Future<void> _maybePromptWebNotifications() async {
+    if (!WebInstallService.isSupported) return;
+    final status = WebInstallService.notificationStatus();
+    if (status != 'default') return; // already granted, denied, or unsupported
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('web_notif_prompted') == true) return;
+    await prefs.setBool('web_notif_prompted', true);
+    final result = await WebInstallService.enableNotifications();
+    AnalyticsService.logEvent('web_notif_prompt_result', {'result': result});
   }
 
   Future<void> buyStreakShield() async {

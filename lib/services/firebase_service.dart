@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_progress.dart';
+import 'web_install_service.dart';
 
 /// Firebase service for cloud sync of user data.
 /// Uses anonymous auth + Firestore.
@@ -41,6 +42,10 @@ class FirebaseService {
       _userId = auth.currentUser?.uid;
       _initialized = true;
       debugPrint('Firebase initialized. User: $_userId');
+      // Hand the UID to the JS FCM layer on web so push_tokens/$uid matches users/$uid.
+      if (_userId != null) {
+        WebInstallService.setUserId(_userId!);
+      }
     } catch (e) {
       debugPrint('Firebase init failed: $e');
     }

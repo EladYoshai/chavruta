@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(function(payload) {
   const title = payload.notification?.title || 'חברותא';
   const options = {
     body: payload.notification?.body || 'יש לך הודעה חדשה',
-    icon: '/icons/Icon-192.png',
-    badge: '/icons/Icon-192.png',
+    icon: '/chavruta/icons/Icon-192.png',
+    badge: '/chavruta/icons/Icon-192.png',
     dir: 'rtl',
     lang: 'he',
     tag: 'chavruta-notification', // Prevents duplicate notifications
@@ -59,7 +59,7 @@ self.addEventListener('notificationclick', function(event) {
         setTimeout(() => {
           self.registration.showNotification('חברותא - ספירת העומר 🌾', {
             body: 'תזכורת: לא לשכוח לספור ספירת העומר!',
-            icon: '/icons/Icon-192.png',
+            icon: '/chavruta/icons/Icon-192.png',
             dir: 'rtl',
             lang: 'he',
             tag: 'chavruta-omer-snooze',
@@ -83,7 +83,7 @@ self.addEventListener('notificationclick', function(event) {
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow('/chavruta/');
       }
     })
   );

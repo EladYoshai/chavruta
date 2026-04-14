@@ -65,8 +65,8 @@ async function sendToToken(token, title, body, actions) {
     notification: { title, body },
     webpush: {
       notification: {
-        icon: '/icons/Icon-192.png',
-        badge: '/icons/Icon-192.png',
+        icon: '/chavruta/icons/Icon-192.png',
+        badge: '/chavruta/icons/Icon-192.png',
         dir: 'rtl',
         lang: 'he',
         tag: 'chavruta-' + Date.now(),
@@ -151,17 +151,21 @@ async function sendCustom(title, body) {
 }
 
 // ============================================
-// Main - run from command line
+// Main - run from command line (only if invoked directly)
 // ============================================
-const type = process.argv[2] || 'encouragement_medium';
+if (require.main === module) {
+  const type = process.argv[2] || 'encouragement_medium';
 
-if (type === 'custom') {
-  const title = process.argv[3] || 'חברותא';
-  const body = process.argv[4] || 'הודעה חדשה';
-  sendCustom(title, body);
-} else {
-  sendByType(type);
+  if (type === 'custom') {
+    const title = process.argv[3] || 'חברותא';
+    const body = process.argv[4] || 'הודעה חדשה';
+    sendCustom(title, body);
+  } else {
+    sendByType(type);
+  }
 }
+
+module.exports = { sendByType, sendCustom, notifications };
 
 // Usage examples:
 // node send_notification.js omer

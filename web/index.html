@@ -42,14 +42,56 @@
   <script src="flutter_bootstrap.js" async></script>
 
   <!-- ============================================ -->
+  <!-- PWA install prompt capture (Android/Chrome) -->
+  <!-- ============================================ -->
+  <script>
+    window.__chavrutaDeferredInstall = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.__chavrutaDeferredInstall = e;
+      console.log('[PWA] Install prompt captured');
+    });
+    window.addEventListener('appinstalled', function() {
+      console.log('[PWA] App installed');
+      window.__chavrutaDeferredInstall = null;
+    });
+    // Detect if already running as installed PWA
+    window.chavrutaIsStandalone = function() {
+      return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+    };
+    // Detect iOS (needs manual instructions - no native prompt)
+    window.chavrutaIsIOS = function() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    };
+    // Can we show a native install prompt now?
+    window.chavrutaCanInstall = function() {
+      return window.__chavrutaDeferredInstall !== null;
+    };
+    // Show the native install prompt (Android/Chrome)
+    window.chavrutaPromptInstall = async function() {
+      const ev = window.__chavrutaDeferredInstall;
+      if (!ev) return 'unavailable';
+      try {
+        ev.prompt();
+        const choice = await ev.userChoice;
+        window.__chavrutaDeferredInstall = null;
+        return choice.outcome;
+      } catch (err) {
+        console.error('[PWA] Prompt error:', err);
+        return 'error';
+      }
+    };
+  </script>
+
+  <!-- ============================================ -->
   <!-- Firebase Cloud Messaging - Push Notifications -->
   <!-- ============================================ -->
   <script type="module">
     // Import Firebase SDK v9+
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+    import { getMessaging, getToken, isSupported as fcmSupported, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
     import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
     // Firebase config
     const firebaseConfig = {
@@ -64,11 +106,19 @@
     // VAPID key for web push
     const VAPID_KEY = 'BMqBYnqNLgUGrRj8CMnBYQInR8aNphnr1_i4s0zrJgi8zdadB30ODHPA4PWjzZY4U4C5m4GUUE5Bsl9UpwIOdI0';
 
-    // Initialize Firebase
+    // Initialize Firebase (named instance used ONLY for FCM/Firestore plumbing here;
+    // user auth UID is supplied by Flutter via window.chavrutaSetUserId so that
+    // push_tokens/$uid and users/$uid share the same UID).
     const app = initializeApp(firebaseConfig, 'fcm-app');
-    const messaging = getMessaging(app);
     const db = getFirestore(app);
-    const auth = getAuth(app);
+
+    let messaging = null;
+    let swRegistration = null;
+    let _flutterUid = null;
+
+    window.chavrutaSetUserId = function(uid) {
+      _flutterUid = uid || null;
+    };
 
     // Register service worker for background notifications
     async function registerSW() {
@@ -82,89 +132,82 @@
       }
     }
 
-    // Request notification permission and get FCM token
-    async function requestPermissionAndGetToken() {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          console.log('[FCM] Permission denied');
-          return null;
-        }
-
-        // Get the service worker registration
-        const swReg = await navigator.serviceWorker.ready;
-
-        // Get FCM token
-        const token = await getToken(messaging, {
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: swReg,
-        });
-
-        console.log('[FCM] Token:', token);
-        return token;
-      } catch (err) {
-        console.error('[FCM] Error getting token:', err);
-        return null;
-      }
-    }
-
-    // Save token to Firestore
+    // Save token to Firestore under the same UID Flutter uses.
     async function saveTokenToFirestore(token) {
       try {
-        // Sign in anonymously to get a user ID
-        const userCred = await signInAnonymously(auth);
-        const uid = userCred.user.uid;
-
-        // Save token under the user's document
+        const uid = _flutterUid;
+        if (!uid) {
+          console.warn('[FCM] No Flutter UID yet; token not saved');
+          return null;
+        }
         await setDoc(doc(db, 'push_tokens', uid), {
           token: token,
           platform: 'web',
           createdAt: new Date().toISOString(),
           userAgent: navigator.userAgent,
         }, { merge: true });
-
-        console.log('[FCM] Token saved to Firestore for user:', uid);
+        console.log('[FCM] Token saved for user:', uid);
+        return uid;
       } catch (err) {
         console.error('[FCM] Error saving token:', err);
+        return null;
       }
     }
 
-    // Handle foreground messages (when app is open)
-    onMessage(messaging, (payload) => {
-      console.log('[FCM] Foreground message:', payload);
-      // Show a notification even when app is in foreground
-      if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || 'חברותא', {
-          body: payload.notification?.body || '',
-          icon: '/icons/Icon-192.png',
-          dir: 'rtl',
-          lang: 'he',
-        });
-      }
-    });
-
-    // Main initialization
-    async function initFCM() {
-      // Only run on supported browsers
-      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-        console.log('[FCM] Push not supported');
-        return;
-      }
-
-      // Register service worker
-      await registerSW();
-
-      // Small delay to let Flutter load first
-      setTimeout(async () => {
-        const token = await requestPermissionAndGetToken();
-        if (token) {
-          await saveTokenToFirestore(token);
+    // Expose for Dart: call after meaningful engagement (e.g. first lesson done)
+    window.chavrutaEnableNotifications = async function() {
+      try {
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+          return 'unsupported';
         }
-      }, 3000);
-    }
+        const supported = await fcmSupported();
+        if (!supported) return 'unsupported';
 
-    // Start
-    initFCM();
+        if (Notification.permission === 'denied') return 'denied';
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return permission;
+
+        if (!swRegistration) {
+          swRegistration = await navigator.serviceWorker.ready;
+        }
+        if (!messaging) {
+          messaging = getMessaging(app);
+          onMessage(messaging, (payload) => {
+            console.log('[FCM] Foreground message:', payload);
+            if (Notification.permission === 'granted') {
+              new Notification(payload.notification?.title || 'חברותא', {
+                body: payload.notification?.body || '',
+                icon: '/chavruta/icons/Icon-192.png',
+                dir: 'rtl',
+                lang: 'he',
+              });
+            }
+          });
+        }
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swRegistration,
+        });
+        if (!token) return 'no_token';
+        await saveTokenToFirestore(token);
+        return 'granted';
+      } catch (err) {
+        console.error('[FCM] enableNotifications error:', err);
+        return 'error';
+      }
+    };
+
+    // Current permission status (for UI)
+    window.chavrutaNotificationStatus = function() {
+      if (!('Notification' in window)) return 'unsupported';
+      return Notification.permission; // 'default' | 'granted' | 'denied'
+    };
+
+    // Register SW eagerly (does not prompt)
+    if ('serviceWorker' in navigator) {
+      registerSW();
+    }
   </script>
 </body>
 </html>

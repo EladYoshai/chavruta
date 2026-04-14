@@ -1,0 +1,10 @@
+{
+  "name": "chavruta-notifications",
+  "version": "1.0.0",
+  "description": "Push notification sender for Chavruta app",
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "suncalc": "^1.9.0"
+  }
+}
