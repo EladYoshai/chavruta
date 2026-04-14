@@ -34,18 +34,27 @@ jobs:
         working-directory: tools
         run: npm install --no-audit --no-fund
 
-      - name: Write service account
-        working-directory: tools
+      - name: Check secret and decide
+        id: check
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set"
-            exit 1
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT secret not set; skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
+
+      - name: Write service account
+        if: steps.check.outputs.skip == 'false'
+        working-directory: tools
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
 
       - name: Decide and send
+        if: steps.check.outputs.skip == 'false'
         working-directory: tools
         env:
           FORCE_TYPE: ${{ github.event.inputs.force_type }}
