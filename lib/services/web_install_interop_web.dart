@@ -85,10 +85,18 @@ void setUserId(String uid) {
 
 void registerTokenSaver(Future<bool> Function(String token, String userAgent) fn) {
   try {
-    JSPromise<JSBoolean> handler(JSString token, JSString userAgent) {
-      final future = fn(token.toDart, userAgent.toDart).then((b) => b.toJS);
-      return future.toJS;
+    // Fire-and-forget: JS doesn't await the Firestore write.
+    void handler(JSString token, JSString userAgent) {
+      fn(token.toDart, userAgent.toDart);
     }
     _window.setProperty('chavrutaSaveToken'.toJS, handler.toJS);
-  } catch (_) {}
+    // Confirmation log for debugging
+    final check = _window.getProperty('chavrutaSaveToken'.toJS);
+    final isFn = !check.isUndefinedOrNull && check.isA<JSFunction>();
+    // ignore: avoid_print
+    print('[Dart] chavrutaSaveToken registered: $isFn');
+  } catch (e, st) {
+    // ignore: avoid_print
+    print('[Dart] registerTokenSaver failed: $e\n$st');
+  }
 }
